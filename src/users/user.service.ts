@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
   UnauthorizedException
@@ -13,6 +14,7 @@ import * as bcrypt from 'bcryptjs';
 import { CreateUserDto } from './create.user.dto';
 import { LoginUserDto } from './login.user.dto';
 import { Roles } from './user.enum';
+import { MailerService } from '../mailer/mailer.service';
 
 export const numberOfSalts = 10;
 
@@ -20,10 +22,12 @@ export const numberOfSalts = 10;
 export class UsersService {
   constructor(
     private readonly userRepository: UserRepository,
-    private jwtService: JwtService
+    private jwtService: JwtService,
+    private mailerService: MailerService
   ) {}
 
   async getAllUsers(): Promise<User[]> {
+    this.mailerService.sendMail();
     return await this.userRepository.getAllUsers();
   }
 

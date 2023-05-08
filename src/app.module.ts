@@ -13,6 +13,7 @@ import { LoggerMiddleware } from './middleware/logger.middleware';
 import { JwtModule } from '@nestjs/jwt';
 import { UsersService } from './users/user.service';
 import { UserRepository } from './users/user.repository';
+import { MailerModule } from './mailer/mailer.module';
 
 @Module({
   imports: [
@@ -33,7 +34,8 @@ import { UserRepository } from './users/user.repository';
           expiresIn: config.get<string | number>('JWT_EXPIRE')
         }
       })
-    })
+    }),
+    MailerModule
   ],
   controllers: [AppController],
   providers: [AppService, UsersService]

@@ -7,6 +7,8 @@ import { UserRepository } from './user.repository';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MailerModule } from '../mailer/mailer.module';
+import { MailerService } from '../mailer/mailer.service';
 
 @Module({
   imports: [
@@ -21,10 +23,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         }
       })
     }),
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }])
+    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MailerModule
   ],
   controllers: [UsersController],
-  providers: [UsersService, UserRepository],
+  providers: [UsersService, UserRepository, MailerService],
   exports: [UserRepository]
 })
 export class UsersModule {}
