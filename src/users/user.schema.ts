@@ -16,6 +16,12 @@ export class User {
 
   @Prop()
   role: string;
+
+  @Prop()
+  forgotPasswordToken: string;
+
+  @Prop()
+  forgotPasswordTimestamp: string;
 }
 
 export class UserWithId extends User {

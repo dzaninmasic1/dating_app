@@ -28,6 +28,23 @@ export class UserRepository {
     });
   }
 
+  async updatePassword(email: string, password: string): Promise<User> {
+    const newPassword = { password: password };
+    return await this.userModel.findOneAndUpdate({ email }, newPassword);
+  }
+
+  async updateRecoveryTokenByEmail(
+    email: string,
+    token: string,
+    timestamp: string
+  ): Promise<User> {
+    const updatedToken = {
+      forgotPasswordToken: token,
+      forgotPasswordTimestamp: timestamp
+    };
+    return await this.userModel.findOneAndUpdate({ email }, updatedToken);
+  }
+
   async deleteById(id: string): Promise<User> {
     return await this.userModel.findByIdAndDelete(id);
   }

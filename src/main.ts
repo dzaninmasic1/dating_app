@@ -7,6 +7,6 @@ async function bootstrap() {
   dotenv.config();
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe());
-  await app.listen(8002);
+  await app.listen(3000);
 }
 bootstrap();

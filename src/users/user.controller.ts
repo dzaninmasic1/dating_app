@@ -17,6 +17,8 @@ import { LoginUserDto } from './login.user.dto';
 import { Request } from 'express';
 import { Roles } from './user.enum';
 import { Auth } from '../middleware/auth.decorator';
+import { ForgotPasswordDto } from './forgot.password.dto';
+import { ChangeForgotPasswordDto } from './change.forgot.password.dto';
 
 @Controller('users')
 export class UsersController {
@@ -33,6 +35,8 @@ export class UsersController {
   @Get('/test/all')
   @Auth(Roles.ADMIN)
   async getAllUsersTest(): Promise<User[]> {
+    console.log(new Date().toDateString());
+    console.log(new Date().toISOString());
     return await this.usersService.getAllUsers();
   }
 
@@ -55,6 +59,24 @@ export class UsersController {
     loginUserDto: LoginUserDto
   ): Promise<{ token: string }> {
     return await this.usersService.loginUser(loginUserDto);
+  }
+
+  @Post('/forgot-password')
+  async forgotPassword(
+    @Body()
+    forgotPasswordDto: ForgotPasswordDto
+  ): Promise<string> {
+    return await this.usersService.forgotPassword(forgotPasswordDto);
+  }
+
+  @Post('/change-forgot-password')
+  async changeForgotPassword(
+    @Body()
+    changeForgotPasswordDto: ChangeForgotPasswordDto
+  ): Promise<string> {
+    return await this.usersService.changeForgotPassword(
+      changeForgotPasswordDto
+    );
   }
 
   @Put('/update/:id')

@@ -15,6 +15,8 @@ import { CreateUserDto } from './create.user.dto';
 import { LoginUserDto } from './login.user.dto';
 import { Roles } from './user.enum';
 import { MailerService } from '../mailer/mailer.service';
+import { ForgotPasswordDto } from './forgot.password.dto';
+import { ChangeForgotPasswordDto } from './change.forgot.password.dto';
 
 export const numberOfSalts = 10;
 
@@ -27,7 +29,7 @@ export class UsersService {
   ) {}
 
   async getAllUsers(): Promise<User[]> {
-    this.mailerService.sendMail();
+    //this.mailerService.sendMail();
     return await this.userRepository.getAllUsers();
   }
 
@@ -54,7 +56,9 @@ export class UsersService {
         ...user,
         email: lowercaseEmail,
         password: hashedPassword,
-        role: Roles.ADMIN
+        role: Roles.ADMIN,
+        forgotPasswordToken: null,
+        forgotPasswordTimestamp: null
       };
       const finalUser = await this.userRepository.createUser(newUser);
       const token = this.jwtService.sign({ id: finalUser._id });
@@ -83,6 +87,54 @@ export class UsersService {
     return { token };
   }
 
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<string> {
+    const { email } = forgotPasswordDto;
+    const fetchedUser = await this.userRepository.findByEmail(email);
+    if (!fetchedUser) {
+      throw new UnauthorizedException(
+        'Email can only be sent to the original account email.'
+      );
+    }
+    const token = generateRandomString();
+    const timestamp = new Date().toISOString();
+    const newUser = await this.userRepository.updateRecoveryTokenByEmail(
+      fetchedUser.email,
+      token,
+      timestamp
+    );
+    const user = await this.userRepository.findByEmail(newUser.email);
+    return user.forgotPasswordToken;
+  }
+
+  async changeForgotPassword(
+    changeForgotPasswordDto: ChangeForgotPasswordDto
+  ): Promise<string> {
+    const { email, forgotPasswordToken, newPassword } = changeForgotPasswordDto;
+
+    const fetchedUser = await this.userRepository.findByEmail(email);
+    if (!fetchedUser) {
+      throw new UnauthorizedException('Unable to find user.');
+    }
+
+    if (forgotPasswordToken != fetchedUser.forgotPasswordToken) {
+      throw new UnauthorizedException('Incorrect recovery token.');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, numberOfSalts);
+    const doesPasswordMatch = await bcrypt.compare(
+      newPassword,
+      fetchedUser.password
+    );
+    if (doesPasswordMatch) {
+      throw new UnauthorizedException(
+        'Password cannot be the same as the old one!'
+      );
+    }
+
+    await this.userRepository.updatePassword(email, hashedPassword);
+    return 'Password updated!';
+  }
+
   async updateById(id: string, user: Omit<User, '_id'>): Promise<User> {
     return await this.userRepository.updateById(id, user);
   }
@@ -90,4 +142,14 @@ export class UsersService {
   async deleteById(id: string): Promise<User> {
     return await this.userRepository.deleteById(id);
   }
+}
+
+function generateRandomString(): string {
+  const chars =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
+  let result = '';
+  for (let i = 0; i < 12; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
 }
