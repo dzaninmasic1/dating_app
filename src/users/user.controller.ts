@@ -5,20 +5,34 @@ import {
   Get,
   Param,
   Post,
-  Put
+  Put,
+  Req,
+  UnauthorizedException
 } from '@nestjs/common';
 import { UsersService } from './user.service';
 import { CreateUserDto } from './create.user.dto';
 import { User } from './user.schema';
 import { UpdateUserDto } from './update.user.dto';
-import { PasswordLength } from './user.decorator';
+import { LoginUserDto } from './login.user.dto';
+import { Request } from 'express';
+import { Roles } from './user.enum';
+import { Auth } from '../middleware/auth.decorator';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  async getAllUsers(): Promise<User[]> {
+  async getAllUsers(@Req() req: Request): Promise<User[]> {
+    console.log('INSIDE CONTROLLER ', req.user);
+    if (req.user.role == Roles.ADMIN)
+      return await this.usersService.getAllUsers();
+    else throw new UnauthorizedException();
+  }
+
+  @Get('/test/all')
+  @Auth(Roles.ADMIN)
+  async getAllUsersTest(): Promise<User[]> {
     return await this.usersService.getAllUsers();
   }
 
@@ -33,6 +47,14 @@ export class UsersController {
     createUserDto: CreateUserDto
   ): Promise<{ token: string }> {
     return await this.usersService.createUser(createUserDto);
+  }
+
+  @Post('/login')
+  async loginUser(
+    @Body()
+    loginUserDto: LoginUserDto
+  ): Promise<{ token: string }> {
+    return await this.usersService.loginUser(loginUserDto);
   }
 
   @Put('/update/:id')

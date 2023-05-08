@@ -13,6 +13,9 @@ export class User {
 
   @Prop()
   password: string;
+
+  @Prop()
+  role: string;
 }
 
 export class UserWithId extends User {

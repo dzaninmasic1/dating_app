@@ -1,5 +1,6 @@
 export class UpdateUserDto {
   name: string;
-  email: string; //PITAJ ZA readonly
+  email: string;
   password: string;
+  role: string;
 }

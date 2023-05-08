@@ -24,6 +24,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }])
   ],
   controllers: [UsersController],
-  providers: [UsersService, UserRepository]
+  providers: [UsersService, UserRepository],
+  exports: [UserRepository]
 })
 export class UsersModule {}
