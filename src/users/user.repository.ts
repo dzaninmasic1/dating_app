@@ -1,20 +1,50 @@
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserWithId } from './user.schema';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
+import { ResponsePaginateDto, UserPaginateDto } from './user.paginate.dto';
+import { UserRadiusDto } from './user.radius.dto';
 
 export class UserRepository {
   constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
-  async getAllUsers(): Promise<User[]> {
-    return await this.userModel.find().exec();
+  async getAllUsers(
+    paginateDto: UserPaginateDto,
+    whereArray: any[]
+  ): Promise<ResponsePaginateDto> {
+    const { limit, page, sort, sortBy } = paginateDto;
+    const whereCondition =
+      whereArray.length > 0
+        ? {
+            $and: [...whereArray]
+          }
+        : {};
+    const count = await this.userModel.find(whereCondition).count();
+    let numberOfPages: number;
+
+    if (limit < 1) {
+      numberOfPages = 1;
+    } else {
+      numberOfPages = Math.ceil(count / limit);
+    }
+
+    const data = await this.userModel
+      .find(whereCondition)
+      .sort({ [`${sortBy}`]: sort === 1 ? 1 : -1 })
+      .limit(limit)
+      .skip((page - 1) * limit);
+    return {
+      pages: numberOfPages,
+      page: limit < 1 ? 1 : page,
+      data
+    };
   }
 
   async getOneUser(id: string): Promise<User> {
     return await this.userModel.findById(id);
   }
 
-  async findByEmail(email: string): Promise<UserWithId> {
-    return await this.userModel.findOne({ email }).exec();
+  async findBy(findBy: any[]): Promise<UserWithId> {
+    return await this.userModel.findOne({ $and: [...findBy] }).exec();
   }
 
   async createUser(user: User): Promise<UserWithId> {
@@ -28,24 +58,55 @@ export class UserRepository {
     });
   }
 
-  async updatePassword(email: string, password: string): Promise<User> {
+  async updatePassword({
+    id,
+    password
+  }: {
+    id: string;
+    password: string;
+  }): Promise<User> {
     const newPassword = { password: password };
-    return await this.userModel.findOneAndUpdate({ email }, newPassword);
+    return await this.userModel.findByIdAndUpdate(id, newPassword);
   }
 
-  async updateRecoveryTokenByEmail(
-    email: string,
-    token: string,
-    timestamp: string
-  ): Promise<User> {
+  async updateRecoveryTokenByEmail({
+    id,
+    token,
+    timestamp
+  }: {
+    id: string;
+    token: string;
+    timestamp: string;
+  }): Promise<User> {
     const updatedToken = {
       forgotPasswordToken: token,
       forgotPasswordTimestamp: timestamp
     };
-    return await this.userModel.findOneAndUpdate({ email }, updatedToken);
+    console.log('ID: ', id);
+    return await this.userModel.findByIdAndUpdate(
+      new mongoose.Types.ObjectId(id),
+      updatedToken
+    );
   }
 
   async deleteById(id: string): Promise<User> {
     return await this.userModel.findByIdAndDelete(id);
+  }
+
+  async getUsersWithinRadius(userRadiusDto: UserRadiusDto): Promise<User[]> {
+    const { location, radius } = userRadiusDto;
+
+    const users = await this.userModel.aggregate([
+      {
+        $geoNear: {
+          near: { type: 'Point', coordinates: location.coordinates },
+          distanceField: 'distance',
+          maxDistance: radius,
+          spherical: true
+        }
+      }
+    ]);
+
+    return users;
   }
 }

@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Req,
   UnauthorizedException
 } from '@nestjs/common';
@@ -19,25 +20,28 @@ import { Roles } from './user.enum';
 import { Auth } from '../middleware/auth.decorator';
 import { ForgotPasswordDto } from './forgot.password.dto';
 import { ChangeForgotPasswordDto } from './change.forgot.password.dto';
+import { ResponsePaginateDto, UserPaginateDto } from './user.paginate.dto';
+import { UserRadiusDto } from './user.radius.dto';
+import { ChangePasswordDto } from './change.password.dto';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  async getAllUsers(@Req() req: Request): Promise<User[]> {
-    console.log('INSIDE CONTROLLER ', req.user);
-    if (req.user.role == Roles.ADMIN)
-      return await this.usersService.getAllUsers();
-    else throw new UnauthorizedException();
+  async getAllUsers(
+    @Query()
+    paginateDto: UserPaginateDto
+  ): Promise<ResponsePaginateDto> {
+    return await this.usersService.getAllUsers(paginateDto);
   }
 
-  @Get('/test/all')
-  @Auth(Roles.ADMIN)
-  async getAllUsersTest(): Promise<User[]> {
-    console.log(new Date().toDateString());
-    console.log(new Date().toISOString());
-    return await this.usersService.getAllUsers();
+  @Get('/radius')
+  async getRadius(
+    @Body()
+    userRadiusDto: UserRadiusDto
+  ): Promise<User[]> {
+    return await this.usersService.getRadius(userRadiusDto);
   }
 
   @Get('/get/:id')
@@ -86,7 +90,15 @@ export class UsersController {
     @Body()
     user: UpdateUserDto
   ): Promise<User> {
-    return this.usersService.updateById(id, user);
+    return await this.usersService.updateById(id, user);
+  }
+
+  @Put('change-password')
+  async updatePassword(
+    @Body()
+    changePasswordDto: ChangePasswordDto
+  ): Promise<string> {
+    return await this.usersService.changePassword(changePasswordDto);
   }
 
   @Delete('/delete/:id')
@@ -94,6 +106,6 @@ export class UsersController {
     @Param('id')
     id: string
   ): Promise<User> {
-    return this.usersService.deleteById(id);
+    return await this.usersService.deleteById(id);
   }
 }

@@ -17,6 +17,10 @@ import { Roles } from './user.enum';
 import { MailerService } from '../mailer/mailer.service';
 import { ForgotPasswordDto } from './forgot.password.dto';
 import { ChangeForgotPasswordDto } from './change.forgot.password.dto';
+import { ResponsePaginateDto, UserPaginateDto } from './user.paginate.dto';
+import { UpdateUserDto } from './update.user.dto';
+import { UserRadiusDto } from './user.radius.dto';
+import { ChangePasswordDto } from './change.password.dto';
 
 export const numberOfSalts = 10;
 
@@ -28,9 +32,53 @@ export class UsersService {
     private mailerService: MailerService
   ) {}
 
-  async getAllUsers(): Promise<User[]> {
+  async getAllUsers(
+    paginateDto: UserPaginateDto
+  ): Promise<ResponsePaginateDto> {
     //this.mailerService.sendMail();
-    return await this.userRepository.getAllUsers();
+    const {
+      name,
+      email,
+      role,
+      forgotPasswordToken,
+      forgotPasswordTimestamp,
+      createdAccountTimestamp
+    } = paginateDto;
+    const whereArray = [];
+    if (email) {
+      whereArray.push({ email: { $regex: '.*' + email + '.*' } });
+    }
+    if (name) {
+      whereArray.push({ name: { $regex: '.*' + name + '.*' } });
+    }
+    if (role) {
+      whereArray.push({ role: role });
+    }
+    if (forgotPasswordToken) {
+      whereArray.push({
+        forgotPasswordToken: forgotPasswordToken
+      });
+    }
+    if (forgotPasswordTimestamp) {
+      whereArray.push({
+        //forgotPasswordTimestamp: forgotPasswordTimestamp
+        forgotPasswordTimestamp: { $lt: forgotPasswordTimestamp }
+      });
+    }
+    if (createdAccountTimestamp) {
+      whereArray.push({
+        createdAccountTimestamp: createdAccountTimestamp
+      });
+    }
+    /* if (timeFiveMinutesAgo) {
+      whereArray.push({
+        timeFiveMinutesAgo: new Date(
+          timeFiveMinutesAgo.setMinutes(timeFiveMinutesAgo.getMinutes() - 5)
+        ).toISOString()
+      });
+    } */
+
+    return await this.userRepository.getAllUsers(paginateDto, whereArray);
   }
 
   async getOneUser(id: string): Promise<User> {
@@ -47,7 +95,9 @@ export class UsersService {
   async createUser(user: CreateUserDto): Promise<{ token: string }> {
     const { email, password } = user;
     const lowercaseEmail = email.toLowerCase();
-    const existingUser = await this.userRepository.findByEmail(email);
+    const conditionArray = [];
+    conditionArray.push({ email });
+    const existingUser = await this.userRepository.findBy(conditionArray);
     if (existingUser != null) {
       throw new ConflictException('Email already exists!');
     } else {
@@ -58,7 +108,12 @@ export class UsersService {
         password: hashedPassword,
         role: Roles.ADMIN,
         forgotPasswordToken: null,
-        forgotPasswordTimestamp: null
+        forgotPasswordTimestamp: null,
+        createdAccountTimestamp: new Date().toISOString(),
+        location: {
+          type: 'Point',
+          coordinates: [-73.9375, 40.8303]
+        }
       };
       const finalUser = await this.userRepository.createUser(newUser);
       const token = this.jwtService.sign({ id: finalUser._id });
@@ -66,10 +121,14 @@ export class UsersService {
     }
   }
 
+  async getRadius(userRadiusDto: UserRadiusDto): Promise<User[]> {
+    return await this.userRepository.getUsersWithinRadius(userRadiusDto);
+  }
+
   async loginUser(user: LoginUserDto): Promise<{ token: string }> {
     const { email, password } = user;
-
-    const fetchedUser = await this.userRepository.findByEmail(email);
+    const conditionArray = [{ email }];
+    const fetchedUser = await this.userRepository.findBy(conditionArray);
     console.log(fetchedUser);
     if (!fetchedUser) {
       throw new UnauthorizedException('Invalid email or password');
@@ -89,7 +148,8 @@ export class UsersService {
 
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<string> {
     const { email } = forgotPasswordDto;
-    const fetchedUser = await this.userRepository.findByEmail(email);
+    const conditionArray = [{ email }];
+    const fetchedUser = await this.userRepository.findBy(conditionArray);
     if (!fetchedUser) {
       throw new UnauthorizedException(
         'Email can only be sent to the original account email.'
@@ -97,21 +157,36 @@ export class UsersService {
     }
     const token = generateRandomString();
     const timestamp = new Date().toISOString();
-    const newUser = await this.userRepository.updateRecoveryTokenByEmail(
-      fetchedUser.email,
+    const newUser = await this.userRepository.updateRecoveryTokenByEmail({
+      id: fetchedUser._id.toString(),
       token,
       timestamp
-    );
-    const user = await this.userRepository.findByEmail(newUser.email);
+    });
+    const user = await this.userRepository.findBy(conditionArray);
     return user.forgotPasswordToken;
+  }
+
+  async updateRecoveryTokenByEmail(
+    email: string,
+    token: string,
+    timestamp: string
+  ): Promise<string> {
+    const conditionArray = [{ email }];
+    const user = await this.userRepository.findBy(conditionArray);
+    await this.userRepository.updateRecoveryTokenByEmail({
+      id: user._id.toString(),
+      token,
+      timestamp
+    });
+    return 'Updated!';
   }
 
   async changeForgotPassword(
     changeForgotPasswordDto: ChangeForgotPasswordDto
   ): Promise<string> {
     const { email, forgotPasswordToken, newPassword } = changeForgotPasswordDto;
-
-    const fetchedUser = await this.userRepository.findByEmail(email);
+    const conditionArray = [{ email }];
+    const fetchedUser = await this.userRepository.findBy(conditionArray);
     if (!fetchedUser) {
       throw new UnauthorizedException('Unable to find user.');
     }
@@ -131,7 +206,50 @@ export class UsersService {
       );
     }
 
-    await this.userRepository.updatePassword(email, hashedPassword);
+    await this.userRepository.updatePassword({
+      id: fetchedUser._id.toString(),
+      password: hashedPassword
+    });
+    return 'Password updated!';
+  }
+
+  async changePassword(changePasswordDto: ChangePasswordDto): Promise<string> {
+    const { email, oldPassword, newPassword, confirmNewPassword } =
+      changePasswordDto;
+
+    const conditionArray = [{ email }];
+    const fetchedUser = await this.userRepository.findBy(conditionArray);
+
+    const doesPasswordMatch = await bcrypt.compare(
+      oldPassword,
+      fetchedUser.password
+    );
+
+    if (!fetchedUser) {
+      throw new UnauthorizedException('Unable to find user.');
+    }
+    if (!doesPasswordMatch) {
+      throw new UnauthorizedException('Old password does not match.');
+    }
+    if (newPassword !== confirmNewPassword) {
+      throw new UnauthorizedException('New passwords do not match.');
+    }
+
+    const isNewSameAsOld = await bcrypt.compare(
+      newPassword,
+      fetchedUser.password
+    );
+    if (isNewSameAsOld) {
+      throw new UnauthorizedException(
+        'New password cannot be the same as older passwords'
+      );
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, numberOfSalts);
+    await this.userRepository.updatePassword({
+      id: fetchedUser._id.toString(),
+      password: hashedPassword
+    });
     return 'Password updated!';
   }
 

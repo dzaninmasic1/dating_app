@@ -14,6 +14,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { UsersService } from './users/user.service';
 import { UserRepository } from './users/user.repository';
 import { MailerModule } from './mailer/mailer.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { SchedulerService } from './scheduler/scheduler.service';
 
 @Module({
   imports: [
@@ -35,15 +37,10 @@ import { MailerModule } from './mailer/mailer.module';
         }
       })
     }),
-    MailerModule
+    MailerModule,
+    ScheduleModule.forRoot()
   ],
   controllers: [AppController],
-  providers: [AppService, UsersService]
+  providers: [AppService, UsersService, SchedulerService]
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(LoggerMiddleware)
-      .forRoutes({ path: 'users/', method: RequestMethod.GET });
-  }
-}
+export class AppModule {}
