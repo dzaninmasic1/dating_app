@@ -3,6 +3,18 @@ import mongoose, { Document } from 'mongoose';
 
 export type CatDocument = Document<User>;
 export type PointDocument = Document<Location>;
+export type LikeDocument = Document<Like>;
+
+@Schema()
+export class Like {
+  @Prop()
+  users: [string, string];
+
+  @Prop()
+  status: string;
+}
+
+export const LikeSchema = SchemaFactory.createForClass(Like);
 
 @Schema()
 export class Location {
@@ -42,6 +54,11 @@ export class User {
 }
 
 export class UserWithId extends User {
+  @Prop()
+  _id: mongoose.Types.ObjectId;
+}
+
+export class LikeWithId extends Like {
   @Prop()
   _id: mongoose.Types.ObjectId;
 }

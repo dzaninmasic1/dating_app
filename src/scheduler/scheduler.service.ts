@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { UsersService } from '../users/user.service';
-import { UserPaginateDto } from '../users/user.paginate.dto';
+import { UserPaginateDto } from '../users/dto/user.paginate.dto';
 
 @Injectable()
 export class SchedulerService {

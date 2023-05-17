@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { UsersController } from './user.controller';
 import { UsersService } from './user.service';
 import { MongooseModule } from '@nestjs/mongoose';
-import { User, UserSchema } from './user.schema';
+import { Like, LikeSchema, User, UserSchema } from './user.schema';
 import { UserRepository } from './user.repository';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
@@ -23,7 +23,10 @@ import { MailerService } from '../mailer/mailer.service';
         }
       })
     }),
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([
+      { name: User.name, schema: UserSchema },
+      { name: Like.name, schema: LikeSchema }
+    ]),
     MailerModule
   ],
   controllers: [UsersController],

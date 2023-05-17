@@ -6,21 +6,22 @@ import {
   NotFoundException,
   UnauthorizedException
 } from '@nestjs/common';
-import { User } from './user.schema';
+import { Like, User } from './user.schema';
 import { isValidObjectId } from 'mongoose';
 import { UserRepository } from './user.repository';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import { CreateUserDto } from './create.user.dto';
-import { LoginUserDto } from './login.user.dto';
+import { CreateUserDto } from './dto/create.user.dto';
+import { LoginUserDto } from './dto/login.user.dto';
 import { Roles } from './user.enum';
 import { MailerService } from '../mailer/mailer.service';
-import { ForgotPasswordDto } from './forgot.password.dto';
-import { ChangeForgotPasswordDto } from './change.forgot.password.dto';
-import { ResponsePaginateDto, UserPaginateDto } from './user.paginate.dto';
-import { UpdateUserDto } from './update.user.dto';
-import { UserRadiusDto } from './user.radius.dto';
-import { ChangePasswordDto } from './change.password.dto';
+import { ForgotPasswordDto } from './dto/forgot.password.dto';
+import { ChangeForgotPasswordDto } from './dto/change.forgot.password.dto';
+import { ResponsePaginateDto, UserPaginateDto } from './dto/user.paginate.dto';
+import { UpdateUserDto } from './dto/update.user.dto';
+import { UserRadiusDto } from './dto/user.radius.dto';
+import { ChangePasswordDto } from './dto/change.password.dto';
+import { ReactWithUserDto } from './dto/react.with.user.dto';
 
 export const numberOfSalts = 10;
 
@@ -70,15 +71,81 @@ export class UsersService {
         createdAccountTimestamp: createdAccountTimestamp
       });
     }
-    /* if (timeFiveMinutesAgo) {
-      whereArray.push({
-        timeFiveMinutesAgo: new Date(
-          timeFiveMinutesAgo.setMinutes(timeFiveMinutesAgo.getMinutes() - 5)
-        ).toISOString()
-      });
-    } */
 
     return await this.userRepository.getAllUsers(paginateDto, whereArray);
+  }
+
+  /* async getAllForLikes(id: string): Promise<User[]> {
+    return await this.userRepository.getAllForLike(id);
+  }
+
+  async likeUser(id: string, likedUserId: string): Promise<string> {
+    if (id === likedUserId) {
+      return 'Cannot like yourself.';
+    }
+
+    const fetchedUser = await this.userRepository.getOneUser(id);
+    const alreadyLiked = fetchedUser.likes.some(
+      (like) => like.userId === likedUserId
+    );
+    if (alreadyLiked) {
+      return 'You cannot like the same user twice.';
+    }
+
+    return await this.userRepository.likeUser(id, likedUserId);
+  }
+
+  async dislikeUser(id: string, dislikedUserId: string): Promise<string> {
+    if (id === dislikedUserId) {
+      return 'Cannot dislike yourself.';
+    }
+
+    const fetchedUser = await this.userRepository.getOneUser(id);
+    const alreadyDisliked = fetchedUser.dislikes.some(
+      (dislike) => dislike.userId === dislikedUserId
+    );
+    if (alreadyDisliked) {
+      return 'You cannot dislike the same user twice.';
+    }
+
+    return await this.userRepository.dislikeUser(id, dislikedUserId);
+  } */
+
+  async getAllForLikes(id: string): Promise<User[]> {
+    const likes = await this.userRepository.getLikesByUserId(id);
+    const excludedUserIds = likes.map((like) => like.users).flat();
+
+    return this.userRepository.getAllForLikes(excludedUserIds, id);
+  }
+
+  async reactWithUser(
+    id: string,
+    reactWithUserDto: ReactWithUserDto
+  ): Promise<string> {
+    const { likedUserId, status } = reactWithUserDto;
+    const matchArray = [id, likedUserId];
+    const doesMatchExist = await this.userRepository.findLike(matchArray);
+    console.log(doesMatchExist);
+    if (!doesMatchExist) {
+      const newLike = new Like();
+      newLike.users = [id, likedUserId];
+      newLike.status = 'one_liked';
+      await this.userRepository.reactWithUser(newLike);
+      return 'Liked user.';
+    } else {
+      if (doesMatchExist.users[0] === id) {
+        return 'Cannot like the same user twice.';
+      } else {
+        const like = new Like();
+        like.users = [id, likedUserId];
+        like.status = 'liked_back';
+        await this.userRepository.updateReaction(
+          doesMatchExist._id.toString(),
+          like
+        );
+        return 'User liked back.';
+      }
+    }
   }
 
   async getOneUser(id: string): Promise<User> {
@@ -112,7 +179,7 @@ export class UsersService {
         createdAccountTimestamp: new Date().toISOString(),
         location: {
           type: 'Point',
-          coordinates: [-73.9375, 40.8303]
+          coordinates: [43.85643, 18.413029]
         }
       };
       const finalUser = await this.userRepository.createUser(newUser);

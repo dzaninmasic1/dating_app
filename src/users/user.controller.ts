@@ -11,18 +11,19 @@ import {
   UnauthorizedException
 } from '@nestjs/common';
 import { UsersService } from './user.service';
-import { CreateUserDto } from './create.user.dto';
-import { User } from './user.schema';
-import { UpdateUserDto } from './update.user.dto';
-import { LoginUserDto } from './login.user.dto';
+import { CreateUserDto } from './dto/create.user.dto';
+import { Like, User } from './user.schema';
+import { UpdateUserDto } from './dto/update.user.dto';
+import { LoginUserDto } from './dto/login.user.dto';
 import { Request } from 'express';
 import { Roles } from './user.enum';
 import { Auth } from '../middleware/auth.decorator';
-import { ForgotPasswordDto } from './forgot.password.dto';
-import { ChangeForgotPasswordDto } from './change.forgot.password.dto';
-import { ResponsePaginateDto, UserPaginateDto } from './user.paginate.dto';
-import { UserRadiusDto } from './user.radius.dto';
-import { ChangePasswordDto } from './change.password.dto';
+import { ForgotPasswordDto } from './dto/forgot.password.dto';
+import { ChangeForgotPasswordDto } from './dto/change.forgot.password.dto';
+import { ResponsePaginateDto, UserPaginateDto } from './dto/user.paginate.dto';
+import { UserRadiusDto } from './dto/user.radius.dto';
+import { ChangePasswordDto } from './dto/change.password.dto';
+import { ReactWithUserDto } from './dto/react.with.user.dto';
 
 @Controller('users')
 export class UsersController {
@@ -34,6 +35,40 @@ export class UsersController {
     paginateDto: UserPaginateDto
   ): Promise<ResponsePaginateDto> {
     return await this.usersService.getAllUsers(paginateDto);
+  }
+
+  /* @Get('/for-like/:id')
+  async getAllForLikes(@Param('id') id: string): Promise<User[]> {
+    return await this.usersService.getAllForLikes(id);
+  }
+
+  @Put('/:id/like/:likedUserId')
+  async likeUser(
+    @Param('id') id: string,
+    @Param('likedUserId') likedUserId: string
+  ): Promise<string> {
+    return await this.usersService.likeUser(id, likedUserId);
+  }
+
+  @Put('/:id/dislike/:dislikedUserId')
+  async dislikeUser(
+    @Param('id') id: string,
+    @Param('dislikedUserId') dislikedUserId: string
+  ): Promise<string> {
+    return await this.usersService.dislikeUser(id, dislikedUserId);
+  } */
+
+  @Get('/for-like/:id')
+  async getAllForLikes(@Param('id') id: string): Promise<User[]> {
+    return await this.usersService.getAllForLikes(id);
+  }
+
+  @Post('/like/:id')
+  async reactWithUser(
+    @Param('id') id: string,
+    @Body() reactWithUserDto: ReactWithUserDto
+  ): Promise<string> {
+    return await this.usersService.reactWithUser(id, reactWithUserDto);
   }
 
   @Get('/radius')

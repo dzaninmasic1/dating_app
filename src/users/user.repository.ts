@@ -1,11 +1,14 @@
 import { InjectModel } from '@nestjs/mongoose';
-import { User, UserWithId } from './user.schema';
+import { Like, LikeWithId, User, UserWithId } from './user.schema';
 import mongoose, { Model } from 'mongoose';
-import { ResponsePaginateDto, UserPaginateDto } from './user.paginate.dto';
-import { UserRadiusDto } from './user.radius.dto';
+import { ResponsePaginateDto, UserPaginateDto } from './dto/user.paginate.dto';
+import { UserRadiusDto } from './dto/user.radius.dto';
 
 export class UserRepository {
-  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Like.name) private likeModel: Model<Like>
+  ) {}
 
   async getAllUsers(
     paginateDto: UserPaginateDto,
@@ -37,6 +40,59 @@ export class UserRepository {
       page: limit < 1 ? 1 : page,
       data
     };
+  }
+
+  /* async getAllForLike(id: string): Promise<User[]> {
+    const fetchedUser = await this.userModel
+      .findById(id)
+      .select('likes.userId dislikes.userId');
+
+    const excludedUserIds = [
+      ...fetchedUser.likes.map((like) => like.userId),
+      ...fetchedUser.dislikes.map((dislike) => dislike.userId)
+    ];
+
+    return await this.userModel.find({
+      _id: { $ne: id, $nin: excludedUserIds }
+    });
+  }
+
+  async likeUser(id: string, likedUserId: string): Promise<string> {
+    await this.userModel.findByIdAndUpdate(id, {
+      $push: { likes: { userId: likedUserId } }
+    });
+    return 'User liked!';
+  }
+
+  async dislikeUser(id: string, dislikedUserId: string): Promise<string> {
+    await this.userModel.findByIdAndUpdate(id, {
+      $push: { dislikes: { userId: dislikedUserId } }
+    });
+    return 'User disliked!';
+  } */
+
+  async getLikesByUserId(id: string): Promise<Like[]> {
+    return this.likeModel.find({ users: id }).exec();
+  }
+
+  async getAllForLikes(excludedUserIds: string[], id: string): Promise<User[]> {
+    return this.userModel
+      .find({ _id: { $nin: excludedUserIds, $ne: id } })
+      .exec();
+  }
+
+  async reactWithUser(like: Like): Promise<Like> {
+    return await this.likeModel.create(like);
+  }
+
+  async findLike(users: string[]): Promise<LikeWithId> {
+    return await this.likeModel.findOne({
+      users: { $all: users }
+    });
+  }
+
+  async updateReaction(id: string, like: Like): Promise<Like> {
+    return await this.likeModel.findByIdAndUpdate(id, like);
   }
 
   async getOneUser(id: string): Promise<User> {
