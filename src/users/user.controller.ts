@@ -63,7 +63,7 @@ export class UsersController {
     return await this.usersService.getAllForLikes(id);
   }
 
-  @Post('/like/:id')
+  @Post('/react/:id')
   async reactWithUser(
     @Param('id') id: string,
     @Body() reactWithUserDto: ReactWithUserDto

@@ -22,6 +22,7 @@ import { UpdateUserDto } from './dto/update.user.dto';
 import { UserRadiusDto } from './dto/user.radius.dto';
 import { ChangePasswordDto } from './dto/change.password.dto';
 import { ReactWithUserDto } from './dto/react.with.user.dto';
+import { MatchStatus } from './match.status.enum';
 
 export const numberOfSalts = 10;
 
@@ -62,7 +63,6 @@ export class UsersService {
     }
     if (forgotPasswordTimestamp) {
       whereArray.push({
-        //forgotPasswordTimestamp: forgotPasswordTimestamp
         forgotPasswordTimestamp: { $lt: forgotPasswordTimestamp }
       });
     }
@@ -75,42 +75,6 @@ export class UsersService {
     return await this.userRepository.getAllUsers(paginateDto, whereArray);
   }
 
-  /* async getAllForLikes(id: string): Promise<User[]> {
-    return await this.userRepository.getAllForLike(id);
-  }
-
-  async likeUser(id: string, likedUserId: string): Promise<string> {
-    if (id === likedUserId) {
-      return 'Cannot like yourself.';
-    }
-
-    const fetchedUser = await this.userRepository.getOneUser(id);
-    const alreadyLiked = fetchedUser.likes.some(
-      (like) => like.userId === likedUserId
-    );
-    if (alreadyLiked) {
-      return 'You cannot like the same user twice.';
-    }
-
-    return await this.userRepository.likeUser(id, likedUserId);
-  }
-
-  async dislikeUser(id: string, dislikedUserId: string): Promise<string> {
-    if (id === dislikedUserId) {
-      return 'Cannot dislike yourself.';
-    }
-
-    const fetchedUser = await this.userRepository.getOneUser(id);
-    const alreadyDisliked = fetchedUser.dislikes.some(
-      (dislike) => dislike.userId === dislikedUserId
-    );
-    if (alreadyDisliked) {
-      return 'You cannot dislike the same user twice.';
-    }
-
-    return await this.userRepository.dislikeUser(id, dislikedUserId);
-  } */
-
   async getAllForLikes(id: string): Promise<User[]> {
     const likes = await this.userRepository.getLikesByUserId(id);
     const excludedUserIds = likes.map((like) => like.users).flat();
@@ -118,33 +82,244 @@ export class UsersService {
     return this.userRepository.getAllForLikes(excludedUserIds, id);
   }
 
-  async reactWithUser(
+  /*   async reactWithUser(
     id: string,
     reactWithUserDto: ReactWithUserDto
   ): Promise<string> {
     const { likedUserId, status } = reactWithUserDto;
     const matchArray = [id, likedUserId];
     const doesMatchExist = await this.userRepository.findLike(matchArray);
-    console.log(doesMatchExist);
     if (!doesMatchExist) {
       const newLike = new Like();
-      newLike.users = [id, likedUserId];
-      newLike.status = 'one_liked';
-      await this.userRepository.reactWithUser(newLike);
-      return 'Liked user.';
-    } else {
-      if (doesMatchExist.users[0] === id) {
-        return 'Cannot like the same user twice.';
+
+      if (status === MatchStatus.LIKED) {
+        newLike.users = [id, likedUserId];
+        newLike.status = 'one_liked';
+      } else if (status === MatchStatus.DISLIKED) {
+        newLike.users = [id, likedUserId];
+        newLike.status = 'disliked';
       } else {
+        return 'Impossible scenario';
+      }
+
+      await this.userRepository.reactWithUser(newLike);
+      return 'Reaction saved.';
+    } else {
+      //CHECK IF STATUS IS DISLIKED AND FORBID ANYTHING IF IT IS
+      if (
+        doesMatchExist.status === MatchStatus.DISLIKED ||
+        (doesMatchExist.status === 'one_liked' &&
+          doesMatchExist.users[0] === id &&
+          status !== MatchStatus.BLOCKED) ||
+        (doesMatchExist.status === 'liked_back' &&
+          doesMatchExist.users[0] === id &&
+          status !== MatchStatus.BLOCKED) ||
+        (doesMatchExist.users[1] === id && status !== MatchStatus.BLOCKED) ||
+        (doesMatchExist.users[1] === id &&
+          status !== MatchStatus.UNBLOCKED &&
+          doesMatchExist.status !== MatchStatus.BLOCKED_BACK)
+      ) {
+        return 'Forbidden action!';
+      }
+      //CHECK IF USER WHO BLOCKED TRIES TO DO ANYTHING OTHER THAN UNBLOCK
+      if (
+        (doesMatchExist.status === MatchStatus.BLOCKED_BACK &&
+          doesMatchExist.users[1] === id &&
+          status !== MatchStatus.UNBLOCKED) ||
+        (doesMatchExist.status === MatchStatus.BLOCKED &&
+          doesMatchExist.users[0] === id &&
+          status !== MatchStatus.UNBLOCKED)
+      ) {
+        return 'Cannot do anything. You need to unblock the user first!';
+      }
+      //BLOCK CHECK
+      if (
+        (doesMatchExist.status === MatchStatus.BLOCKED_BACK &&
+          doesMatchExist.users[0] === id) ||
+        (doesMatchExist.status === MatchStatus.BLOCKED &&
+          doesMatchExist.users[1] === id)
+      ) {
+        return 'Cannot do anything. You are blocked!';
+      }
+      //UNBLOCK USER
+      if (
+        (doesMatchExist.users[0] === id && status === MatchStatus.UNBLOCKED) ||
+        (doesMatchExist.users[1] === id &&
+          status === MatchStatus.UNBLOCKED &&
+          doesMatchExist.status === MatchStatus.BLOCKED_BACK)
+      ) {
         const like = new Like();
         like.users = [id, likedUserId];
-        like.status = 'liked_back';
+        like.status = 'liked';
         await this.userRepository.updateReaction(
           doesMatchExist._id.toString(),
           like
         );
-        return 'User liked back.';
+        return 'User unblocked.';
       }
+      //LIKE/DISLIKE TWICE CHECK
+      if (doesMatchExist.users[0] === id && status === MatchStatus.LIKED) {
+        return 'Cannot like/dislike the same user twice.';
+      } else {
+        const like = new Like();
+        if (status === MatchStatus.DISLIKED) {
+          like.users = [id, likedUserId];
+          like.status = 'disliked';
+        } else if (status === MatchStatus.BLOCKED) {
+          if (doesMatchExist.users[0] == id) {
+            like.users = [id, likedUserId];
+            like.status = 'blocked';
+          } else {
+            like.users = [id, likedUserId];
+            like.status = 'blocked_back';
+          }
+        } else if (status === MatchStatus.LIKED) {
+          like.users = [id, likedUserId];
+          like.status = 'liked_back';
+        } else {
+          return 'Impossible scenario';
+        }
+
+        await this.userRepository.updateReaction(
+          doesMatchExist._id.toString(),
+          like
+        );
+        return 'User saved (Updated).';
+      }
+    }
+  } */
+
+  async reactWithUser(
+    id: string,
+    reactWithUserDto: ReactWithUserDto
+  ): Promise<string> {
+    if (reactWithUserDto.status === MatchStatus.LIKED) {
+      return await this.like(id, reactWithUserDto.likedUserId);
+    } else if (reactWithUserDto.status === MatchStatus.DISLIKED) {
+      return await this.dislike(id, reactWithUserDto.likedUserId);
+    } else if (reactWithUserDto.status === MatchStatus.BLOCKED) {
+      return await this.block(id, reactWithUserDto.likedUserId);
+    } else if (reactWithUserDto.status === MatchStatus.UNBLOCKED) {
+      return await this.unblock(id, reactWithUserDto.likedUserId);
+    } else {
+      throw new UnauthorizedException();
+    }
+  }
+
+  async like(id: string, likedUserId: string): Promise<string> {
+    const matchArray = [id, likedUserId];
+    const doesMatchExist = await this.userRepository.findLike(matchArray);
+    const like = new Like();
+
+    if (!doesMatchExist) {
+      like.users = [id, likedUserId];
+      like.status = MatchStatus.ONE_LIKED;
+      await this.userRepository.reactWithUser(like);
+      return 'Reaction saved';
+    } else {
+      if (
+        doesMatchExist.users[1] === id &&
+        doesMatchExist.status === MatchStatus.ONE_LIKED
+      ) {
+        like.users = [id, likedUserId];
+        like.status = MatchStatus.LIKED_BACK;
+        await this.userRepository.updateReaction(
+          doesMatchExist._id.toString(),
+          like
+        );
+        return 'Reaction saved (LIKED BACK)';
+      } else {
+        throw new UnauthorizedException();
+      }
+    }
+  }
+
+  async dislike(id: string, likedUserId: string): Promise<string> {
+    const matchArray = [id, likedUserId];
+    const doesMatchExist = await this.userRepository.findLike(matchArray);
+    const like = new Like();
+
+    if (!doesMatchExist) {
+      like.users = [id, likedUserId];
+      like.status = MatchStatus.DISLIKED;
+      await this.userRepository.reactWithUser(like);
+      return 'Reaction saved';
+    } else {
+      if (
+        doesMatchExist.users[1] === id &&
+        doesMatchExist.status === MatchStatus.ONE_LIKED
+      ) {
+        like.users = [id, likedUserId];
+        like.status = MatchStatus.DISLIKED;
+        await this.userRepository.updateReaction(
+          doesMatchExist._id.toString(),
+          like
+        );
+        return 'Reaction saved (DISLIKED BACK)';
+      } else {
+        throw new UnauthorizedException();
+      }
+    }
+  }
+
+  async block(id: string, likedUserId: string): Promise<string> {
+    const matchArray = [id, likedUserId];
+    const doesMatchExist = await this.userRepository.findLike(matchArray);
+    const like = new Like();
+
+    if (doesMatchExist) {
+      if (
+        doesMatchExist.status === MatchStatus.ONE_LIKED ||
+        doesMatchExist.status === MatchStatus.LIKED_BACK
+      ) {
+        if (doesMatchExist.users[0] === id) {
+          like.users = [id, likedUserId];
+          like.status = MatchStatus.BLOCKED;
+        } else {
+          like.users = [id, likedUserId];
+          like.status = MatchStatus.BLOCKED_BACK;
+        }
+        await this.userRepository.updateReaction(
+          doesMatchExist._id.toString(),
+          like
+        );
+        return 'Reaction saved (BLOCKED / BLOCKED BACK)';
+      } else {
+        throw new UnauthorizedException();
+      }
+    } else {
+      throw new UnauthorizedException();
+    }
+  }
+
+  async unblock(id: string, likedUserId: string): Promise<string> {
+    const matchArray = [id, likedUserId];
+    const doesMatchExist = await this.userRepository.findLike(matchArray);
+    const like = new Like();
+
+    if (doesMatchExist) {
+      if (
+        doesMatchExist.status === MatchStatus.BLOCKED &&
+        doesMatchExist.users[0] === id
+      ) {
+        like.users = [id, likedUserId];
+        like.status = MatchStatus.ONE_LIKED;
+      } else if (
+        doesMatchExist.status === MatchStatus.BLOCKED_BACK &&
+        doesMatchExist.users[1] === id
+      ) {
+        like.users = [id, likedUserId];
+        like.status = MatchStatus.ONE_LIKED;
+      } else {
+        throw new UnauthorizedException();
+      }
+      await this.userRepository.updateReaction(
+        doesMatchExist._id.toString(),
+        like
+      );
+      return 'Reaction saved (UNBLOCKED)';
+    } else {
+      throw new UnauthorizedException();
     }
   }
 
