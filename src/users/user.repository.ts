@@ -81,6 +81,38 @@ export class UserRepository {
       .exec();
   }
 
+  async getLikes(id: mongoose.Types.ObjectId): Promise<Like[]> {
+    return await this.likeModel
+      .find({
+        'users.0': id,
+        status: { $in: ['one_liked', 'liked_back'] }
+      })
+      .populate('users', 'name email')
+      .select('status');
+  }
+
+  async getLikeRequests(id: mongoose.Types.ObjectId): Promise<Like[]> {
+    return await this.likeModel
+      .find({
+        users: { $in: [id] },
+        status: { $in: ['one_liked'] }
+      })
+      .populate('users', 'name email')
+      .select('status')
+      .exec();
+  }
+
+  async getBlocked(id: mongoose.Types.ObjectId): Promise<Like[]> {
+    return await this.likeModel
+      .find({
+        users: { $in: [id] },
+        status: { $in: ['blocked'] }
+      })
+      .populate('users', 'name email')
+      .select('status')
+      .exec();
+  }
+
   async reactWithUser(like: Like): Promise<Like> {
     return await this.likeModel.create(like);
   }

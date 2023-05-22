@@ -7,7 +7,7 @@ import {
   UnauthorizedException
 } from '@nestjs/common';
 import { Like, User } from './user.schema';
-import { isValidObjectId } from 'mongoose';
+import mongoose, { isValidObjectId } from 'mongoose';
 import { UserRepository } from './user.repository';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
@@ -75,12 +75,12 @@ export class UsersService {
     return await this.userRepository.getAllUsers(paginateDto, whereArray);
   }
 
-  async getAllForLikes(id: string): Promise<User[]> {
+  /* async getAllForLikes(id: string): Promise<User[]> {
     const likes = await this.userRepository.getLikesByUserId(id);
     const excludedUserIds = likes.map((like) => like.users).flat();
 
     return this.userRepository.getAllForLikes(excludedUserIds, id);
-  }
+  } */
 
   /*   async reactWithUser(
     id: string,
@@ -189,6 +189,63 @@ export class UsersService {
     }
   } */
 
+  async getLikes(id: string): Promise<Like[]> {
+    const newId = new mongoose.Types.ObjectId(id);
+    const likes = await this.userRepository.getLikes(newId);
+    const testArray = [];
+    likes.forEach((like) => {
+      if (like.users[0]._id.toString() === id) {
+        testArray.push(like);
+      }
+    });
+
+    const newTestArray = [];
+    testArray.forEach((item) => {
+      newTestArray.push(item.users[1], item.status);
+    });
+    console.log(newTestArray);
+
+    return testArray;
+  }
+
+  async getLikeRequests(id: string): Promise<Like[]> {
+    const newId = new mongoose.Types.ObjectId(id);
+    const likes = await this.userRepository.getLikeRequests(newId);
+    const testArray = [];
+    likes.forEach((like) => {
+      if (like.users[1]._id.toString() === id) {
+        testArray.push(like);
+      }
+    });
+
+    const newTestArray = [];
+    testArray.forEach((item) => {
+      newTestArray.push(item.users[0], item.status);
+    });
+    console.log(newTestArray);
+
+    return testArray;
+  }
+
+  async getBlocked(id: string): Promise<Like[]> {
+    const newId = new mongoose.Types.ObjectId(id);
+    const likes = await this.userRepository.getBlocked(newId);
+    const testArray = [];
+    likes.forEach((like) => {
+      if (like.users[0]._id.toString() === id) {
+        testArray.push(like);
+      }
+    });
+
+    const newTestArray = [];
+    testArray.forEach((item) => {
+      newTestArray.push(item.users[1], item.status);
+    });
+    console.log(newTestArray);
+
+    return testArray;
+  }
+
   async reactWithUser(
     id: string,
     reactWithUserDto: ReactWithUserDto
@@ -211,17 +268,20 @@ export class UsersService {
     const doesMatchExist = await this.userRepository.findLike(matchArray);
     const like = new Like();
 
+    const newId = new mongoose.Types.ObjectId(id);
+    const newlikedUserId = new mongoose.Types.ObjectId(likedUserId);
+
     if (!doesMatchExist) {
-      like.users = [id, likedUserId];
+      like.users = [newId, newlikedUserId];
       like.status = MatchStatus.ONE_LIKED;
       await this.userRepository.reactWithUser(like);
       return 'Reaction saved';
     } else {
       if (
-        doesMatchExist.users[1] === id &&
+        doesMatchExist.users[1].toString() === newId.toString() &&
         doesMatchExist.status === MatchStatus.ONE_LIKED
       ) {
-        like.users = [id, likedUserId];
+        like.users = [newId, newlikedUserId];
         like.status = MatchStatus.LIKED_BACK;
         await this.userRepository.updateReaction(
           doesMatchExist._id.toString(),
@@ -239,17 +299,20 @@ export class UsersService {
     const doesMatchExist = await this.userRepository.findLike(matchArray);
     const like = new Like();
 
+    const newId = new mongoose.Types.ObjectId(id);
+    const newlikedUserId = new mongoose.Types.ObjectId(likedUserId);
+
     if (!doesMatchExist) {
-      like.users = [id, likedUserId];
+      like.users = [newId, newlikedUserId];
       like.status = MatchStatus.DISLIKED;
       await this.userRepository.reactWithUser(like);
       return 'Reaction saved';
     } else {
       if (
-        doesMatchExist.users[1] === id &&
+        doesMatchExist.users[1].toString() === newId.toString() &&
         doesMatchExist.status === MatchStatus.ONE_LIKED
       ) {
-        like.users = [id, likedUserId];
+        like.users = [newId, newlikedUserId];
         like.status = MatchStatus.DISLIKED;
         await this.userRepository.updateReaction(
           doesMatchExist._id.toString(),
@@ -267,16 +330,17 @@ export class UsersService {
     const doesMatchExist = await this.userRepository.findLike(matchArray);
     const like = new Like();
 
+    const newId = new mongoose.Types.ObjectId(id);
+    const newlikedUserId = new mongoose.Types.ObjectId(likedUserId);
+
     if (doesMatchExist) {
       if (
         doesMatchExist.status === MatchStatus.ONE_LIKED ||
         doesMatchExist.status === MatchStatus.LIKED_BACK
       ) {
-        if (doesMatchExist.users[0] === id) {
-          like.users = [id, likedUserId];
+        if (doesMatchExist.users[0].toString() === newId.toString()) {
           like.status = MatchStatus.BLOCKED;
         } else {
-          like.users = [id, likedUserId];
           like.status = MatchStatus.BLOCKED_BACK;
         }
         await this.userRepository.updateReaction(
@@ -297,18 +361,21 @@ export class UsersService {
     const doesMatchExist = await this.userRepository.findLike(matchArray);
     const like = new Like();
 
+    const newId = new mongoose.Types.ObjectId(id);
+    const newlikedUserId = new mongoose.Types.ObjectId(likedUserId);
+
     if (doesMatchExist) {
+      console.log(doesMatchExist);
+      console.log(doesMatchExist.users[0].toString() === newId.toString());
       if (
         doesMatchExist.status === MatchStatus.BLOCKED &&
-        doesMatchExist.users[0] === id
+        doesMatchExist.users[0].toString() === newId.toString()
       ) {
-        like.users = [id, likedUserId];
         like.status = MatchStatus.ONE_LIKED;
       } else if (
         doesMatchExist.status === MatchStatus.BLOCKED_BACK &&
-        doesMatchExist.users[1] === id
+        doesMatchExist.users[1].toString() === newId.toString()
       ) {
-        like.users = [id, likedUserId];
         like.status = MatchStatus.ONE_LIKED;
       } else {
         throw new UnauthorizedException();

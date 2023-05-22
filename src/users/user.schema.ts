@@ -7,8 +7,8 @@ export type LikeDocument = Document<Like>;
 
 @Schema()
 export class Like {
-  @Prop()
-  users: [string, string];
+  @Prop({ type: [{ type: mongoose.Types.ObjectId, ref: 'User' }] })
+  users: [mongoose.Types.ObjectId, mongoose.Types.ObjectId];
 
   @Prop()
   status: string;

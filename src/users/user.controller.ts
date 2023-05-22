@@ -58,9 +58,24 @@ export class UsersController {
     return await this.usersService.dislikeUser(id, dislikedUserId);
   } */
 
-  @Get('/for-like/:id')
+  /* @Get('/for-like/:id')
   async getAllForLikes(@Param('id') id: string): Promise<User[]> {
     return await this.usersService.getAllForLikes(id);
+  } */
+
+  @Get('/get-likes/:id')
+  async getLikes(@Param('id') id: string): Promise<Like[]> {
+    return await this.usersService.getLikes(id);
+  }
+
+  @Get('/get-like-requests/:id')
+  async getLikeRequests(@Param('id') id: string): Promise<Like[]> {
+    return await this.usersService.getLikeRequests(id);
+  }
+
+  @Get('/get-blocked/:id')
+  async getBlocked(@Param('id') id: string): Promise<Like[]> {
+    return await this.usersService.getBlocked(id);
   }
 
   @Post('/react/:id')
