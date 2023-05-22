@@ -1,7 +1,12 @@
 import { InjectModel } from '@nestjs/mongoose';
 import { Like, LikeWithId, User, UserWithId } from './user.schema';
 import mongoose, { Model } from 'mongoose';
-import { ResponsePaginateDto, UserPaginateDto } from './dto/user.paginate.dto';
+import {
+  PaginateDto,
+  ResponsePaginateDto,
+  ResponsePaginateDtoLikes,
+  UserPaginateDto
+} from './dto/user.paginate.dto';
 import { UserRadiusDto } from './dto/user.radius.dto';
 
 export class UserRepository {
@@ -81,36 +86,148 @@ export class UserRepository {
       .exec();
   }
 
-  async getLikes(id: mongoose.Types.ObjectId): Promise<Like[]> {
-    return await this.likeModel
+  async getBothLikes(
+    id: mongoose.Types.ObjectId,
+    paginateDto: PaginateDto
+  ): Promise<ResponsePaginateDtoLikes> {
+    const { page, limit } = paginateDto;
+
+    const count = await this.likeModel
       .find({
-        'users.0': id,
-        status: { $in: ['one_liked', 'liked_back'] }
+        users: { $in: id },
+        status: { $in: ['liked_back'] }
+      })
+      .count();
+    let numberOfPages: number;
+    if (limit < 1) {
+      numberOfPages = 1;
+    } else {
+      numberOfPages = Math.ceil(count / limit);
+    }
+
+    const data = await this.likeModel
+      .find({
+        users: { $in: id },
+        status: { $in: ['liked_back'] }
       })
       .populate('users', 'name email')
-      .select('status');
+      .select('status')
+      .limit(limit)
+      .skip((page - 1) * limit);
+
+    return {
+      pages: numberOfPages,
+      page: limit < 1 ? 1 : page,
+      data
+    };
   }
 
-  async getLikeRequests(id: mongoose.Types.ObjectId): Promise<Like[]> {
-    return await this.likeModel
+  async getLikes(
+    id: mongoose.Types.ObjectId,
+    paginateDto: PaginateDto
+  ): Promise<ResponsePaginateDtoLikes> {
+    const { page, limit } = paginateDto;
+
+    const count = await this.likeModel
       .find({
-        users: { $in: [id] },
+        'users.0': id,
+        status: { $in: ['one_liked'] }
+      })
+      .count();
+    let numberOfPages: number;
+    if (limit < 1) {
+      numberOfPages = 1;
+    } else {
+      numberOfPages = Math.ceil(count / limit);
+    }
+
+    const data = await this.likeModel
+      .find({
+        'users.0': id,
         status: { $in: ['one_liked'] }
       })
       .populate('users', 'name email')
       .select('status')
-      .exec();
+      .limit(limit)
+      .skip((page - 1) * limit);
+
+    return {
+      pages: numberOfPages,
+      page: limit < 1 ? 1 : page,
+      data
+    };
   }
 
-  async getBlocked(id: mongoose.Types.ObjectId): Promise<Like[]> {
-    return await this.likeModel
+  async getLikeRequests(
+    id: mongoose.Types.ObjectId,
+    paginateDto: PaginateDto
+  ): Promise<ResponsePaginateDtoLikes> {
+    const { page, limit } = paginateDto;
+
+    const count = await this.likeModel
       .find({
-        users: { $in: [id] },
+        'users.1': id,
+        status: { $in: ['one_liked'] }
+      })
+      .count();
+    let numberOfPages: number;
+    if (limit < 1) {
+      numberOfPages = 1;
+    } else {
+      numberOfPages = Math.ceil(count / limit);
+    }
+
+    const data = await this.likeModel
+      .find({
+        'users.1': id,
+        status: { $in: ['one_liked'] }
+      })
+      .populate('users', 'name email')
+      .select('status')
+      .limit(limit)
+      .skip((page - 1) * limit);
+
+    return {
+      pages: numberOfPages,
+      page: limit < 1 ? 1 : page,
+      data
+    };
+  }
+
+  async getBlocked(
+    id: mongoose.Types.ObjectId,
+    paginateDto: PaginateDto
+  ): Promise<ResponsePaginateDtoLikes> {
+    const { page, limit } = paginateDto;
+
+    const count = await this.likeModel
+      .find({
+        'users.0': id,
+        status: { $in: ['blocked'] }
+      })
+      .count();
+    let numberOfPages: number;
+    if (limit < 1) {
+      numberOfPages = 1;
+    } else {
+      numberOfPages = Math.ceil(count / limit);
+    }
+
+    const data = await this.likeModel
+      .find({
+        'users.0': id,
         status: { $in: ['blocked'] }
       })
       .populate('users', 'name email')
       .select('status')
-      .exec();
+      .limit(limit)
+      .skip((page - 1) * limit);
+
+    return {
+      pages: numberOfPages,
+      page: limit < 1 ? 1 : page,
+      data
+    };
   }
 
   async reactWithUser(like: Like): Promise<Like> {

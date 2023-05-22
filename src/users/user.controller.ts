@@ -20,7 +20,12 @@ import { Roles } from './user.enum';
 import { Auth } from '../middleware/auth.decorator';
 import { ForgotPasswordDto } from './dto/forgot.password.dto';
 import { ChangeForgotPasswordDto } from './dto/change.forgot.password.dto';
-import { ResponsePaginateDto, UserPaginateDto } from './dto/user.paginate.dto';
+import {
+  PaginateDto,
+  ResponsePaginateDto,
+  ResponsePaginateDtoLikes,
+  UserPaginateDto
+} from './dto/user.paginate.dto';
 import { UserRadiusDto } from './dto/user.radius.dto';
 import { ChangePasswordDto } from './dto/change.password.dto';
 import { ReactWithUserDto } from './dto/react.with.user.dto';
@@ -63,19 +68,36 @@ export class UsersController {
     return await this.usersService.getAllForLikes(id);
   } */
 
+  @Get('/get-both-likes/:id')
+  async getBothLikes(
+    @Param('id') id: string,
+    @Query() paginateDto: PaginateDto
+  ): Promise<ResponsePaginateDtoLikes> {
+    return await this.usersService.getBothLikes(id, paginateDto);
+  }
+
   @Get('/get-likes/:id')
-  async getLikes(@Param('id') id: string): Promise<Like[]> {
-    return await this.usersService.getLikes(id);
+  async getLikes(
+    @Param('id') id: string,
+    @Query() paginateDto: PaginateDto
+  ): Promise<ResponsePaginateDtoLikes> {
+    return await this.usersService.getLikes(id, paginateDto);
   }
 
   @Get('/get-like-requests/:id')
-  async getLikeRequests(@Param('id') id: string): Promise<Like[]> {
-    return await this.usersService.getLikeRequests(id);
+  async getLikeRequests(
+    @Param('id') id: string,
+    @Query() paginateDto: PaginateDto
+  ): Promise<ResponsePaginateDtoLikes> {
+    return await this.usersService.getLikeRequests(id, paginateDto);
   }
 
   @Get('/get-blocked/:id')
-  async getBlocked(@Param('id') id: string): Promise<Like[]> {
-    return await this.usersService.getBlocked(id);
+  async getBlocked(
+    @Param('id') id: string,
+    @Query() paginateDto: PaginateDto
+  ): Promise<ResponsePaginateDtoLikes> {
+    return await this.usersService.getBlocked(id, paginateDto);
   }
 
   @Post('/react/:id')

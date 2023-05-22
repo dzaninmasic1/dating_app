@@ -17,7 +17,12 @@ import { Roles } from './user.enum';
 import { MailerService } from '../mailer/mailer.service';
 import { ForgotPasswordDto } from './dto/forgot.password.dto';
 import { ChangeForgotPasswordDto } from './dto/change.forgot.password.dto';
-import { ResponsePaginateDto, UserPaginateDto } from './dto/user.paginate.dto';
+import {
+  PaginateDto,
+  ResponsePaginateDto,
+  ResponsePaginateDtoLikes,
+  UserPaginateDto
+} from './dto/user.paginate.dto';
 import { UpdateUserDto } from './dto/update.user.dto';
 import { UserRadiusDto } from './dto/user.radius.dto';
 import { ChangePasswordDto } from './dto/change.password.dto';
@@ -189,61 +194,96 @@ export class UsersService {
     }
   } */
 
-  async getLikes(id: string): Promise<Like[]> {
+  async getBothLikes(
+    id: string,
+    paginateDto: PaginateDto
+  ): Promise<ResponsePaginateDtoLikes> {
     const newId = new mongoose.Types.ObjectId(id);
-    const likes = await this.userRepository.getLikes(newId);
-    const testArray = [];
-    likes.forEach((like) => {
-      if (like.users[0]._id.toString() === id) {
-        testArray.push(like);
-      }
-    });
+    const likes = await this.userRepository.getBothLikes(newId, paginateDto);
+    const pages = likes.pages;
+    const page = likes.page;
 
     const newTestArray = [];
-    testArray.forEach((item) => {
+    likes.data.forEach((item) => {
       newTestArray.push(item.users[1], item.status);
     });
-    console.log(newTestArray);
 
-    return testArray;
+    const dataToReturn = {
+      pages,
+      page,
+      data: newTestArray
+    };
+
+    return dataToReturn;
   }
 
-  async getLikeRequests(id: string): Promise<Like[]> {
+  async getLikes(
+    id: string,
+    paginateDto: PaginateDto
+  ): Promise<ResponsePaginateDtoLikes> {
     const newId = new mongoose.Types.ObjectId(id);
-    const likes = await this.userRepository.getLikeRequests(newId);
-    const testArray = [];
-    likes.forEach((like) => {
-      if (like.users[1]._id.toString() === id) {
-        testArray.push(like);
-      }
-    });
+    const likes = await this.userRepository.getLikes(newId, paginateDto);
+    const pages = likes.pages;
+    const page = likes.page;
 
     const newTestArray = [];
-    testArray.forEach((item) => {
+    likes.data.forEach((item) => {
+      newTestArray.push(item.users[1], item.status);
+    });
+
+    const dataToReturn = {
+      pages,
+      page,
+      data: newTestArray
+    };
+
+    return dataToReturn;
+  }
+
+  async getLikeRequests(
+    id: string,
+    paginateDto: PaginateDto
+  ): Promise<ResponsePaginateDtoLikes> {
+    const newId = new mongoose.Types.ObjectId(id);
+    const likes = await this.userRepository.getLikeRequests(newId, paginateDto);
+    const pages = likes.pages;
+    const page = likes.page;
+
+    const newTestArray = [];
+    likes.data.forEach((item) => {
       newTestArray.push(item.users[0], item.status);
     });
-    console.log(newTestArray);
 
-    return testArray;
+    const dataToReturn = {
+      pages,
+      page,
+      data: newTestArray
+    };
+
+    return dataToReturn;
   }
 
-  async getBlocked(id: string): Promise<Like[]> {
+  async getBlocked(
+    id: string,
+    paginateDto: PaginateDto
+  ): Promise<ResponsePaginateDtoLikes> {
     const newId = new mongoose.Types.ObjectId(id);
-    const likes = await this.userRepository.getBlocked(newId);
-    const testArray = [];
-    likes.forEach((like) => {
-      if (like.users[0]._id.toString() === id) {
-        testArray.push(like);
-      }
-    });
+    const likes = await this.userRepository.getBlocked(newId, paginateDto);
+    const pages = likes.pages;
+    const page = likes.page;
 
     const newTestArray = [];
-    testArray.forEach((item) => {
+    likes.data.forEach((item) => {
       newTestArray.push(item.users[1], item.status);
     });
-    console.log(newTestArray);
 
-    return testArray;
+    const dataToReturn = {
+      pages,
+      page,
+      data: newTestArray
+    };
+
+    return dataToReturn;
   }
 
   async reactWithUser(
