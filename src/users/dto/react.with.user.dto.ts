@@ -1,4 +1,10 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength
+} from 'class-validator';
 import { IsMatchStatus } from '../match.status.decorator';
 
 export class ReactWithUserDto {
@@ -10,4 +16,8 @@ export class ReactWithUserDto {
   @IsString()
   @IsMatchStatus()
   status: string;
+
+  @IsOptional()
+  @IsString()
+  likedPhotoUrl: string;
 }

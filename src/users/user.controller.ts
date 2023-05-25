@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { UsersService } from './user.service';
 import { CreateUserDto } from './dto/create.user.dto';
-import { Like, User } from './user.schema';
+import { Like, LikeWithId, User } from './user.schema';
 import { UpdateUserDto } from './dto/update.user.dto';
 import { LoginUserDto } from './dto/login.user.dto';
 import { Request } from 'express';
@@ -24,11 +24,13 @@ import {
   PaginateDto,
   ResponsePaginateDto,
   ResponsePaginateDtoLikes,
+  ResponsePaginateDtoMessages,
   UserPaginateDto
 } from './dto/user.paginate.dto';
 import { UserRadiusDto } from './dto/user.radius.dto';
 import { ChangePasswordDto } from './dto/change.password.dto';
 import { ReactWithUserDto } from './dto/react.with.user.dto';
+import { MessageDto } from './dto/message.dto';
 
 @Controller('users')
 export class UsersController {
@@ -67,6 +69,22 @@ export class UsersController {
   async getAllForLikes(@Param('id') id: string): Promise<User[]> {
     return await this.usersService.getAllForLikes(id);
   } */
+
+  @Post('/message/:likeId')
+  async sendMessage(
+    @Param('likeId') likeId: string,
+    @Body() messageDto: MessageDto
+  ): Promise<void> {
+    return await this.usersService.sendMessage(likeId, messageDto);
+  }
+
+  @Get('/get-conversation/:likeId')
+  async getConversation(
+    @Param('likeId') likeId: string,
+    @Query() paginateDto: PaginateDto
+  ): Promise<ResponsePaginateDtoMessages> {
+    return await this.usersService.getConversation(likeId, paginateDto);
+  }
 
   @Get('/get-both-likes/:id')
   async getBothLikes(

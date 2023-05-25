@@ -6,7 +6,7 @@ import {
   NotFoundException,
   UnauthorizedException
 } from '@nestjs/common';
-import { Like, User } from './user.schema';
+import { Like, LikeWithId, User } from './user.schema';
 import mongoose, { isValidObjectId } from 'mongoose';
 import { UserRepository } from './user.repository';
 import { JwtService } from '@nestjs/jwt';
@@ -21,6 +21,7 @@ import {
   PaginateDto,
   ResponsePaginateDto,
   ResponsePaginateDtoLikes,
+  ResponsePaginateDtoMessages,
   UserPaginateDto
 } from './dto/user.paginate.dto';
 import { UpdateUserDto } from './dto/update.user.dto';
@@ -28,6 +29,7 @@ import { UserRadiusDto } from './dto/user.radius.dto';
 import { ChangePasswordDto } from './dto/change.password.dto';
 import { ReactWithUserDto } from './dto/react.with.user.dto';
 import { MatchStatus } from './match.status.enum';
+import { MessageDto } from './dto/message.dto';
 
 export const numberOfSalts = 10;
 
@@ -194,6 +196,98 @@ export class UsersService {
     }
   } */
 
+  async sendMessage(likeId: string, messageDto: MessageDto): Promise<void> {
+    const { from, to, message } = messageDto;
+    const doesConversationExist = await this.userRepository.findMessage(likeId);
+    const findLike = await this.userRepository.findLikeById(likeId);
+
+    const arr = [from, to];
+
+    if (!doesConversationExist) {
+      if (
+        findLike.status === MatchStatus.ONE_LIKED &&
+        arr.includes(findLike.users[0].toString()) &&
+        arr.includes(findLike.users[1].toString())
+      ) {
+        if (message === 'test url' && arr[0] === findLike.users[0].toString()) {
+          const newMessage = {
+            likeId: Object(likeId),
+            from,
+            to,
+            message
+          };
+          const test = await this.userRepository.createMessage(newMessage);
+          console.log(test);
+        } else {
+          throw new UnauthorizedException('Not a picture! / Cannot do that!');
+        }
+      } else {
+        throw new UnauthorizedException('1');
+      }
+    } else if (doesConversationExist) {
+      if (findLike.status === MatchStatus.ONE_LIKED) {
+        const count = await this.userRepository.countMessages(likeId);
+        if (count < 2 && doesConversationExist.from === from) {
+          const newMessage = {
+            likeId: Object(likeId),
+            from,
+            to,
+            message
+          };
+          const test = await this.userRepository.createMessage(newMessage);
+          console.log(test);
+        } else {
+          throw new UnauthorizedException('Cannot send more than 2 messages!');
+        }
+      } else if (findLike.status === MatchStatus.LIKED_BACK) {
+        const messages = await this.userRepository.getFirstFiveMessages(likeId);
+        const count = await this.userRepository.countMessages(likeId);
+        let doesMessageExist = false;
+        messages.forEach((message) => {
+          if (message.from === from) {
+            doesMessageExist = true;
+            return;
+          }
+        });
+
+        if (count <= 2 && doesMessageExist === false) {
+          if (message === 'test url') {
+            const newMessage = {
+              likeId: Object(likeId),
+              from,
+              to,
+              message
+            };
+            const test = await this.userRepository.createMessage(newMessage);
+            console.log(test);
+          } else {
+            throw new UnauthorizedException('Not a picture!');
+          }
+        } else {
+          const newMessage = {
+            likeId: Object(likeId),
+            from,
+            to,
+            message
+          };
+          const test = await this.userRepository.createMessage(newMessage);
+          console.log(test);
+        }
+      } else {
+        throw new UnauthorizedException('3');
+      }
+    } else {
+      throw new UnauthorizedException('4');
+    }
+  }
+
+  async getConversation(
+    likeId: string,
+    paginateDto: PaginateDto
+  ): Promise<ResponsePaginateDtoMessages> {
+    return await this.userRepository.getConversation(likeId, paginateDto);
+  }
+
   async getBothLikes(
     id: string,
     paginateDto: PaginateDto
@@ -290,8 +384,39 @@ export class UsersService {
     id: string,
     reactWithUserDto: ReactWithUserDto
   ): Promise<string> {
-    if (reactWithUserDto.status === MatchStatus.LIKED) {
-      return await this.like(id, reactWithUserDto.likedUserId);
+    let like: LikeWithId;
+    if (
+      reactWithUserDto.status === MatchStatus.LIKED &&
+      reactWithUserDto.likedPhotoUrl != null
+    ) {
+      const { likedUserId, likedPhotoUrl } = reactWithUserDto;
+      const messageDto = {
+        from: id,
+        to: likedUserId,
+        message: likedPhotoUrl
+      };
+      try {
+        like = await this.like(id, likedUserId);
+        console.log('STATUS ', like.status);
+        await this.sendMessage(like._id.toString(), messageDto);
+        return 'Reaction saved';
+      } catch {
+        console.log('LIKE STATUS: ', like.status);
+        if (like.status === MatchStatus.ONE_LIKED) {
+          await this.userRepository.deleteLike(like._id.toString());
+          throw new UnauthorizedException('Not a picture! (1)');
+        } else if (like.status === MatchStatus.LIKED_BACK) {
+          const likeToUpdate = new Like();
+          likeToUpdate.status = MatchStatus.ONE_LIKED;
+          await this.userRepository.updateReaction(
+            like._id.toString(),
+            likeToUpdate
+          );
+          throw new UnauthorizedException('Not a picture! (2)');
+        } else {
+          throw new UnauthorizedException('How did you get here?');
+        }
+      }
     } else if (reactWithUserDto.status === MatchStatus.DISLIKED) {
       return await this.dislike(id, reactWithUserDto.likedUserId);
     } else if (reactWithUserDto.status === MatchStatus.BLOCKED) {
@@ -303,7 +428,7 @@ export class UsersService {
     }
   }
 
-  async like(id: string, likedUserId: string): Promise<string> {
+  async like(id: string, likedUserId: string): Promise<LikeWithId> {
     const matchArray = [id, likedUserId];
     const doesMatchExist = await this.userRepository.findLike(matchArray);
     const like = new Like();
@@ -314,22 +439,22 @@ export class UsersService {
     if (!doesMatchExist) {
       like.users = [newId, newlikedUserId];
       like.status = MatchStatus.ONE_LIKED;
-      await this.userRepository.reactWithUser(like);
-      return 'Reaction saved';
+      return await this.userRepository.reactWithUser(like);
+      //return 'Reaction saved';
     } else {
       if (
         doesMatchExist.users[1].toString() === newId.toString() &&
         doesMatchExist.status === MatchStatus.ONE_LIKED
       ) {
-        like.users = [newId, newlikedUserId];
         like.status = MatchStatus.LIKED_BACK;
-        await this.userRepository.updateReaction(
+        return await this.userRepository.updateReaction(
           doesMatchExist._id.toString(),
           like
         );
-        return 'Reaction saved (LIKED BACK)';
+
+        //return 'Reaction saved (LIKED BACK)';
       } else {
-        throw new UnauthorizedException();
+        throw new UnauthorizedException('11');
       }
     }
   }
@@ -404,6 +529,10 @@ export class UsersService {
     const newId = new mongoose.Types.ObjectId(id);
     const newlikedUserId = new mongoose.Types.ObjectId(likedUserId);
 
+    const whereArray = [];
+    whereArray.push({ message: { $regex: '.*' + 'test url' + '.*' } });
+    whereArray.push({ likeId: doesMatchExist._id.toString() });
+
     if (doesMatchExist) {
       console.log(doesMatchExist);
       console.log(doesMatchExist.users[0].toString() === newId.toString());
@@ -411,19 +540,20 @@ export class UsersService {
         doesMatchExist.status === MatchStatus.BLOCKED &&
         doesMatchExist.users[0].toString() === newId.toString()
       ) {
-        like.status = MatchStatus.ONE_LIKED;
+        const links = await this.userRepository.getPhotoLinks(whereArray);
+        console.log('PHOTO URLS: ', links);
+        await this.userRepository.deleteMessages(doesMatchExist._id.toString());
       } else if (
         doesMatchExist.status === MatchStatus.BLOCKED_BACK &&
         doesMatchExist.users[1].toString() === newId.toString()
       ) {
-        like.status = MatchStatus.ONE_LIKED;
+        const links = await this.userRepository.getPhotoLinks(whereArray);
+        console.log('PHOTO URLS: ', links);
+        await this.userRepository.deleteMessages(doesMatchExist._id.toString());
       } else {
         throw new UnauthorizedException();
       }
-      await this.userRepository.updateReaction(
-        doesMatchExist._id.toString(),
-        like
-      );
+      await this.userRepository.deleteLike(doesMatchExist._id.toString());
       return 'Reaction saved (UNBLOCKED)';
     } else {
       throw new UnauthorizedException();

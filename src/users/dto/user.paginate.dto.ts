@@ -1,4 +1,4 @@
-import { Like, User } from '../user.schema';
+import { Like, Message, User } from '../user.schema';
 
 export interface PaginateDto {
   page: number;
@@ -17,6 +17,12 @@ export interface ResponsePaginateDtoLikes {
   pages: number;
   page: number;
   data: Like[];
+}
+
+export interface ResponsePaginateDtoMessages {
+  pages: number;
+  page: number;
+  data: Message[];
 }
 
 export interface UserPaginateDto extends PaginateDto {

@@ -4,6 +4,28 @@ import mongoose, { Document } from 'mongoose';
 export type CatDocument = Document<User>;
 export type PointDocument = Document<Location>;
 export type LikeDocument = Document<Like>;
+export type MessageDocument = Document<Message>;
+
+@Schema({ timestamps: true })
+export class Message {
+  @Prop({ type: mongoose.Types.ObjectId, ref: 'Like' })
+  likeId: mongoose.Types.ObjectId;
+
+  @Prop()
+  from: string;
+
+  @Prop()
+  to: string;
+
+  @Prop()
+  message: string;
+}
+
+export const MessageSchema = SchemaFactory.createForClass(Message);
+
+export interface FADILMRZITYPESCRIPT extends Omit<Message, 'likeId'> {
+  likeId: Like | null;
+}
 
 @Schema()
 export class Like {
