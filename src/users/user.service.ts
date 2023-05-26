@@ -4,9 +4,10 @@ import {
   Inject,
   Injectable,
   NotFoundException,
-  UnauthorizedException
+  UnauthorizedException,
+  forwardRef
 } from '@nestjs/common';
-import { Like, LikeWithId, User } from './user.schema';
+import { Like, LikeWithId, User, UserWithId } from './user.schema';
 import mongoose, { isValidObjectId } from 'mongoose';
 import { UserRepository } from './user.repository';
 import { JwtService } from '@nestjs/jwt';
@@ -38,6 +39,7 @@ export class UsersService {
   constructor(
     private readonly userRepository: UserRepository,
     private jwtService: JwtService,
+    @Inject(forwardRef(() => MailerService))
     private mailerService: MailerService
   ) {}
 
@@ -602,6 +604,10 @@ export class UsersService {
 
   async getRadius(userRadiusDto: UserRadiusDto): Promise<User[]> {
     return await this.userRepository.getUsersWithinRadius(userRadiusDto);
+  }
+
+  async findUserBy(conditionArray: any[]): Promise<UserWithId> {
+    return await this.userRepository.findBy(conditionArray);
   }
 
   async loginUser(user: LoginUserDto): Promise<{ token: string }> {

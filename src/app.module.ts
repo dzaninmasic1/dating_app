@@ -15,10 +15,14 @@ import { UserRepository } from './users/user.repository';
 import { MailerModule } from './mailer/mailer.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SchedulerService } from './scheduler/scheduler.service';
+import { AuthModule } from './auth/auth.module';
+import { AuthService } from './auth/auth.service';
+import { AuthRepository } from './auth/auth.repository';
 
 @Module({
   imports: [
     UsersModule,
+    AuthModule,
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -40,6 +44,6 @@ import { SchedulerService } from './scheduler/scheduler.service';
     ScheduleModule.forRoot()
   ],
   controllers: [AppController],
-  providers: [AppService, UsersService, SchedulerService]
+  providers: [AppService, UsersService, SchedulerService, AuthService]
 })
 export class AppModule {}
