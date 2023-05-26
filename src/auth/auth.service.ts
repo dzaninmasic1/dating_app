@@ -7,11 +7,11 @@ import {
 import { AuthRepository } from './auth.repository';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/user.service';
-import { LoginUserDto } from '../users/dto/login.user.dto';
+import { LoginUserDto } from './auth.types';
 import * as bcrypt from 'bcryptjs';
-import { ForgotPasswordDto } from '../users/dto/forgot.password.dto';
-import { ChangeForgotPasswordDto } from '../users/dto/change.forgot.password.dto';
-import { ChangePasswordDto } from '../users/dto/change.password.dto';
+import { ForgotPasswordDto } from './auth.types';
+import { ChangeForgotPasswordDto } from './auth.types';
+import { ChangePasswordDto } from './auth.types';
 
 export const NUMBER_OF_SALTS = 10;
 

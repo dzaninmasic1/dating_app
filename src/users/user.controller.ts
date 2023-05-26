@@ -6,20 +6,12 @@ import {
   Param,
   Post,
   Put,
-  Query,
-  Req,
-  UnauthorizedException
+  Query
 } from '@nestjs/common';
 import { UsersService } from './user.service';
 import { CreateUserDto } from './dto/create.user.dto';
-import { Like, LikeWithId, User } from './user.schema';
+import { User } from './user.schema';
 import { UpdateUserDto } from './dto/update.user.dto';
-import { LoginUserDto } from './dto/login.user.dto';
-import { Request } from 'express';
-import { Roles } from './user.enum';
-import { Auth } from '../middleware/auth.decorator';
-import { ForgotPasswordDto } from './dto/forgot.password.dto';
-import { ChangeForgotPasswordDto } from './dto/change.forgot.password.dto';
 import {
   PaginateDto,
   ResponsePaginateDto,
@@ -28,7 +20,6 @@ import {
   UserPaginateDto
 } from './dto/user.paginate.dto';
 import { UserRadiusDto } from './dto/user.radius.dto';
-import { ChangePasswordDto } from './dto/change.password.dto';
 import { ReactWithUserDto } from './dto/react.with.user.dto';
 import { MessageDto } from './dto/message.dto';
 
@@ -147,32 +138,6 @@ export class UsersController {
     return await this.usersService.createUser(createUserDto);
   }
 
-  @Post('/login')
-  async loginUser(
-    @Body()
-    loginUserDto: LoginUserDto
-  ): Promise<{ token: string }> {
-    return await this.usersService.loginUser(loginUserDto);
-  }
-
-  @Post('/forgot-password')
-  async forgotPassword(
-    @Body()
-    forgotPasswordDto: ForgotPasswordDto
-  ): Promise<string> {
-    return await this.usersService.forgotPassword(forgotPasswordDto);
-  }
-
-  @Post('/change-forgot-password')
-  async changeForgotPassword(
-    @Body()
-    changeForgotPasswordDto: ChangeForgotPasswordDto
-  ): Promise<string> {
-    return await this.usersService.changeForgotPassword(
-      changeForgotPasswordDto
-    );
-  }
-
   @Put('/update/:id')
   async updateUser(
     @Param('id')
@@ -181,14 +146,6 @@ export class UsersController {
     user: UpdateUserDto
   ): Promise<User> {
     return await this.usersService.updateById(id, user);
-  }
-
-  @Put('change-password')
-  async updatePassword(
-    @Body()
-    changePasswordDto: ChangePasswordDto
-  ): Promise<string> {
-    return await this.usersService.changePassword(changePasswordDto);
   }
 
   @Delete('/delete/:id')

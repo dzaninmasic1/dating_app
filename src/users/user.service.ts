@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   ConflictException,
-  Inject,
   Injectable,
   NotFoundException,
   UnauthorizedException
@@ -12,11 +11,8 @@ import { UserRepository } from './user.repository';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { CreateUserDto } from './dto/create.user.dto';
-import { LoginUserDto } from './dto/login.user.dto';
 import { Roles } from './user.enum';
 import { MailerService } from '../mailer/mailer.service';
-import { ForgotPasswordDto } from './dto/forgot.password.dto';
-import { ChangeForgotPasswordDto } from './dto/change.forgot.password.dto';
 import {
   PaginateDto,
   ResponsePaginateDto,
@@ -26,7 +22,6 @@ import {
 } from './dto/user.paginate.dto';
 import { UpdateUserDto } from './dto/update.user.dto';
 import { UserRadiusDto } from './dto/user.radius.dto';
-import { ChangePasswordDto } from './dto/change.password.dto';
 import { ReactWithUserDto } from './dto/react.with.user.dto';
 import { MatchStatus } from './match.status.enum';
 import { MessageDto } from './dto/message.dto';
@@ -608,134 +603,6 @@ export class UsersService {
     return await this.userRepository.findBy(conditionArray);
   }
 
-  async loginUser(user: LoginUserDto): Promise<{ token: string }> {
-    const { email, password } = user;
-    const conditionArray = [{ email }];
-    const fetchedUser = await this.userRepository.findBy(conditionArray);
-    console.log(fetchedUser);
-    if (!fetchedUser) {
-      throw new UnauthorizedException('Invalid email or password');
-    }
-
-    const doesPasswordMatch = await bcrypt.compare(
-      password,
-      fetchedUser.password
-    );
-    if (!doesPasswordMatch) {
-      throw new UnauthorizedException('Invalid email or password');
-    }
-
-    const token = this.jwtService.sign({ id: fetchedUser._id });
-    return { token };
-  }
-
-  async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<string> {
-    const { email } = forgotPasswordDto;
-    const conditionArray = [{ email }];
-    const fetchedUser = await this.userRepository.findBy(conditionArray);
-    if (!fetchedUser) {
-      throw new UnauthorizedException(
-        'Email can only be sent to the original account email.'
-      );
-    }
-    const token = generateRandomString();
-    const timestamp = new Date().toISOString();
-    const newUser = await this.userRepository.updateRecoveryTokenByEmail({
-      id: fetchedUser._id.toString(),
-      token,
-      timestamp
-    });
-    const user = await this.userRepository.findBy(conditionArray);
-    return user.forgotPasswordToken;
-  }
-
-  async updateRecoveryTokenByEmail(
-    email: string,
-    token: string,
-    timestamp: string
-  ): Promise<string> {
-    const conditionArray = [{ email }];
-    const user = await this.userRepository.findBy(conditionArray);
-    await this.userRepository.updateRecoveryTokenByEmail({
-      id: user._id.toString(),
-      token,
-      timestamp
-    });
-    return 'Updated!';
-  }
-
-  async changeForgotPassword(
-    changeForgotPasswordDto: ChangeForgotPasswordDto
-  ): Promise<string> {
-    const { email, forgotPasswordToken, newPassword } = changeForgotPasswordDto;
-    const conditionArray = [{ email }];
-    const fetchedUser = await this.userRepository.findBy(conditionArray);
-    if (!fetchedUser) {
-      throw new UnauthorizedException('Unable to find user.');
-    }
-
-    if (forgotPasswordToken != fetchedUser.forgotPasswordToken) {
-      throw new UnauthorizedException('Incorrect recovery token.');
-    }
-
-    const hashedPassword = await bcrypt.hash(newPassword, numberOfSalts);
-    const doesPasswordMatch = await bcrypt.compare(
-      newPassword,
-      fetchedUser.password
-    );
-    if (doesPasswordMatch) {
-      throw new UnauthorizedException(
-        'Password cannot be the same as the old one!'
-      );
-    }
-
-    await this.userRepository.updatePassword({
-      id: fetchedUser._id.toString(),
-      password: hashedPassword
-    });
-    return 'Password updated!';
-  }
-
-  async changePassword(changePasswordDto: ChangePasswordDto): Promise<string> {
-    const { email, oldPassword, newPassword, confirmNewPassword } =
-      changePasswordDto;
-
-    const conditionArray = [{ email }];
-    const fetchedUser = await this.userRepository.findBy(conditionArray);
-
-    const doesPasswordMatch = await bcrypt.compare(
-      oldPassword,
-      fetchedUser.password
-    );
-
-    if (!fetchedUser) {
-      throw new UnauthorizedException('Unable to find user.');
-    }
-    if (!doesPasswordMatch) {
-      throw new UnauthorizedException('Old password does not match.');
-    }
-    if (newPassword !== confirmNewPassword) {
-      throw new UnauthorizedException('New passwords do not match.');
-    }
-
-    const isNewSameAsOld = await bcrypt.compare(
-      newPassword,
-      fetchedUser.password
-    );
-    if (isNewSameAsOld) {
-      throw new UnauthorizedException(
-        'New password cannot be the same as older passwords'
-      );
-    }
-
-    const hashedPassword = await bcrypt.hash(newPassword, numberOfSalts);
-    await this.userRepository.updatePassword({
-      id: fetchedUser._id.toString(),
-      password: hashedPassword
-    });
-    return 'Password updated!';
-  }
-
   async updateById(id: string, user: Omit<User, '_id'>): Promise<User> {
     return await this.userRepository.updateById(id, user);
   }
@@ -743,14 +610,4 @@ export class UsersService {
   async deleteById(id: string): Promise<User> {
     return await this.userRepository.deleteById(id);
   }
-}
-
-function generateRandomString(): string {
-  const chars =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
-  let result = '';
-  for (let i = 0; i < 12; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
 }

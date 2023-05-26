@@ -2,10 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { UsersService } from '../users/user.service';
 import { UserPaginateDto } from '../users/dto/user.paginate.dto';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class SchedulerService {
-  constructor(private readonly userService: UsersService) {}
+  constructor(
+    private readonly userService: UsersService,
+    private readonly authService: AuthService
+  ) {}
 
   @Cron(CronExpression.EVERY_30_MINUTES)
   async test() {
@@ -29,7 +33,7 @@ export class SchedulerService {
     const promises = [];
     users.data.forEach((user) => {
       promises.push(
-        this.userService.updateRecoveryTokenByEmail(user.email, null, null)
+        this.authService.updateRecoveryTokenByEmail(user.email, null, null)
       );
     });
     await Promise.all(promises);

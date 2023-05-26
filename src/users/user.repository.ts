@@ -344,37 +344,6 @@ export class UserRepository {
     });
   }
 
-  async updatePassword({
-    id,
-    password
-  }: {
-    id: string;
-    password: string;
-  }): Promise<User> {
-    const newPassword = { password: password };
-    return await this.userModel.findByIdAndUpdate(id, newPassword);
-  }
-
-  async updateRecoveryTokenByEmail({
-    id,
-    token,
-    timestamp
-  }: {
-    id: string;
-    token: string;
-    timestamp: string;
-  }): Promise<User> {
-    const updatedToken = {
-      forgotPasswordToken: token,
-      forgotPasswordTimestamp: timestamp
-    };
-    console.log('ID: ', id);
-    return await this.userModel.findByIdAndUpdate(
-      new mongoose.Types.ObjectId(id),
-      updatedToken
-    );
-  }
-
   async deleteById(id: string): Promise<User> {
     return await this.userModel.findByIdAndDelete(id);
   }

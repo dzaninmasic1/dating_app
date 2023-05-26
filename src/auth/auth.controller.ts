@@ -1,9 +1,9 @@
 import { Body, Controller, Post, Put } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LoginUserDto } from '../users/dto/login.user.dto';
-import { ForgotPasswordDto } from '../users/dto/forgot.password.dto';
-import { ChangeForgotPasswordDto } from '../users/dto/change.forgot.password.dto';
-import { ChangePasswordDto } from '../users/dto/change.password.dto';
+import { LoginUserDto } from './auth.types';
+import { ForgotPasswordDto } from './auth.types';
+import { ChangeForgotPasswordDto } from './auth.types';
+import { ChangePasswordDto } from './auth.types';
 
 @Controller('auth')
 export class AuthController {
