@@ -1,10 +1,7 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { LikeService } from './like.service';
-import {
-  PaginateDto,
-  ResponsePaginateDtoLikes
-} from '../users/dto/user.paginate.dto';
-import { ReactWithUserDto } from '../users/dto/react.with.user.dto';
+import { PaginateDto } from '../users/dto/user.paginate.dto';
+import { ReactWithUserDto, ResponsePaginateDtoLikes } from './like.types';
 
 @Controller('likes')
 export class LikeController {

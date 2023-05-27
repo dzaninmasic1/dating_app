@@ -11,7 +11,6 @@ import mongoose, { Model } from 'mongoose';
 import {
   PaginateDto,
   ResponsePaginateDto,
-  ResponsePaginateDtoLikes,
   ResponsePaginateDtoMessages,
   UserPaginateDto
 } from './dto/user.paginate.dto';

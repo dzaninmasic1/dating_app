@@ -13,12 +13,6 @@ export interface ResponsePaginateDto {
   data: User[];
 }
 
-export interface ResponsePaginateDtoLikes {
-  pages: number;
-  page: number;
-  data: Like[];
-}
-
 export interface ResponsePaginateDtoMessages {
   pages: number;
   page: number;

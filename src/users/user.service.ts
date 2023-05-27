@@ -16,14 +16,12 @@ import { MailerService } from '../mailer/mailer.service';
 import {
   PaginateDto,
   ResponsePaginateDto,
-  ResponsePaginateDtoLikes,
   ResponsePaginateDtoMessages,
   UserPaginateDto
 } from './dto/user.paginate.dto';
 import { UpdateUserDto } from './dto/update.user.dto';
 import { UserRadiusDto } from './dto/user.radius.dto';
-import { ReactWithUserDto } from './dto/react.with.user.dto';
-import { MatchStatus } from './match.status.enum';
+import { MatchStatus } from '../like/like.types';
 import { MessageDto } from './dto/message.dto';
 
 export const numberOfSalts = 10;

@@ -1,10 +1,8 @@
 import { InjectModel } from '@nestjs/mongoose';
 import { Like, LikeWithId, User } from '../users/user.schema';
 import mongoose, { Model } from 'mongoose';
-import {
-  PaginateDto,
-  ResponsePaginateDtoLikes
-} from '../users/dto/user.paginate.dto';
+import { PaginateDto } from '../users/dto/user.paginate.dto';
+import { ResponsePaginateDtoLikes } from './like.types';
 
 export class LikeRepository {
   constructor(

@@ -1,14 +1,14 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { LikeRepository } from './like.repository';
 import { UsersService } from '../users/user.service';
-import {
-  PaginateDto,
-  ResponsePaginateDtoLikes
-} from '../users/dto/user.paginate.dto';
+import { PaginateDto } from '../users/dto/user.paginate.dto';
 import mongoose from 'mongoose';
-import { ReactWithUserDto } from '../users/dto/react.with.user.dto';
+import {
+  ReactWithUserDto,
+  ResponsePaginateDtoLikes,
+  MatchStatus
+} from './like.types';
 import { Like, LikeWithId } from '../users/user.schema';
-import { MatchStatus } from '../users/match.status.enum';
 
 @Injectable()
 export class LikeService {

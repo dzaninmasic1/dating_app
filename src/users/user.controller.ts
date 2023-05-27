@@ -15,12 +15,10 @@ import { UpdateUserDto } from './dto/update.user.dto';
 import {
   PaginateDto,
   ResponsePaginateDto,
-  ResponsePaginateDtoLikes,
   ResponsePaginateDtoMessages,
   UserPaginateDto
 } from './dto/user.paginate.dto';
 import { UserRadiusDto } from './dto/user.radius.dto';
-import { ReactWithUserDto } from './dto/react.with.user.dto';
 import { MessageDto } from './dto/message.dto';
 
 @Controller('users')

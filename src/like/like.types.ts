@@ -1,9 +1,33 @@
 import {
-  registerDecorator,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidationArguments,
   ValidationOptions,
-  ValidationArguments
+  registerDecorator
 } from 'class-validator';
-import { MatchStatus } from './match.status.enum';
+import { Like } from '../users/user.schema';
+
+export interface ResponsePaginateDtoLikes {
+  pages: number;
+  page: number;
+  data: Like[];
+}
+
+export class ReactWithUserDto {
+  @IsNotEmpty()
+  @IsString()
+  likedUserId: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @IsMatchStatus()
+  status: string;
+
+  @IsOptional()
+  @IsString()
+  likedPhotoUrl: string;
+}
 
 export function IsMatchStatus(validationOptions?: ValidationOptions) {
   return function (object: Record<string, any>, propertyName: string): void {
@@ -24,4 +48,14 @@ export function IsMatchStatus(validationOptions?: ValidationOptions) {
       }
     });
   };
+}
+
+export enum MatchStatus {
+  LIKED = 'liked',
+  ONE_LIKED = 'one_liked',
+  LIKED_BACK = 'liked_back',
+  DISLIKED = 'disliked',
+  BLOCKED = 'blocked',
+  BLOCKED_BACK = 'blocked_back',
+  UNBLOCKED = 'unblocked'
 }
