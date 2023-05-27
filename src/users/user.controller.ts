@@ -77,46 +77,6 @@ export class UsersController {
     return await this.usersService.getConversation(likeId, paginateDto);
   }
 
-  @Get('/get-both-likes/:id')
-  async getBothLikes(
-    @Param('id') id: string,
-    @Query() paginateDto: PaginateDto
-  ): Promise<ResponsePaginateDtoLikes> {
-    return await this.usersService.getBothLikes(id, paginateDto);
-  }
-
-  @Get('/get-likes/:id')
-  async getLikes(
-    @Param('id') id: string,
-    @Query() paginateDto: PaginateDto
-  ): Promise<ResponsePaginateDtoLikes> {
-    return await this.usersService.getLikes(id, paginateDto);
-  }
-
-  @Get('/get-like-requests/:id')
-  async getLikeRequests(
-    @Param('id') id: string,
-    @Query() paginateDto: PaginateDto
-  ): Promise<ResponsePaginateDtoLikes> {
-    return await this.usersService.getLikeRequests(id, paginateDto);
-  }
-
-  @Get('/get-blocked/:id')
-  async getBlocked(
-    @Param('id') id: string,
-    @Query() paginateDto: PaginateDto
-  ): Promise<ResponsePaginateDtoLikes> {
-    return await this.usersService.getBlocked(id, paginateDto);
-  }
-
-  @Post('/react/:id')
-  async reactWithUser(
-    @Param('id') id: string,
-    @Body() reactWithUserDto: ReactWithUserDto
-  ): Promise<string> {
-    return await this.usersService.reactWithUser(id, reactWithUserDto);
-  }
-
   @Get('/radius')
   async getRadius(
     @Body()
