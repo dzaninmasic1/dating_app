@@ -5,7 +5,7 @@ import {
   NotFoundException,
   UnauthorizedException
 } from '@nestjs/common';
-import { Like, LikeWithId, User, UserWithId } from './user.schema';
+import { Like, LikeWithId, Message, User, UserWithId } from './user.schema';
 import mongoose, { isValidObjectId } from 'mongoose';
 import { UserRepository } from './user.repository';
 import { JwtService } from '@nestjs/jwt';
@@ -553,6 +553,14 @@ export class UsersService {
     } else {
       throw new UnauthorizedException();
     }
+  }
+
+  async deleteMessages(likeId: string): Promise<string> {
+    return await this.userRepository.deleteMessages(likeId);
+  }
+
+  async getPhotoLinks(whereArray: any[]): Promise<Message[]> {
+    return await this.userRepository.getPhotoLinks(whereArray);
   }
 
   async getOneUser(id: string): Promise<User> {

@@ -17,6 +17,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { SchedulerService } from './scheduler/scheduler.service';
 import { AuthModule } from './auth/auth.module';
 import { AuthService } from './auth/auth.service';
+import { LikeService } from './like/like.service';
+import { LikeModule } from './like/like.module';
 
 @Module({
   imports: [
@@ -40,9 +42,16 @@ import { AuthService } from './auth/auth.service';
     }),
     MailerModule,
     ScheduleModule.forRoot(),
-    AuthModule
+    AuthModule,
+    LikeModule
   ],
   controllers: [AppController],
-  providers: [AppService, UsersService, SchedulerService, AuthService]
+  providers: [
+    AppService,
+    UsersService,
+    SchedulerService,
+    AuthService,
+    LikeService
+  ]
 })
 export class AppModule {}
