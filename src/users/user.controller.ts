@@ -59,22 +59,6 @@ export class UsersController {
     return await this.usersService.getAllForLikes(id);
   } */
 
-  @Post('/message/:likeId')
-  async sendMessage(
-    @Param('likeId') likeId: string,
-    @Body() messageDto: MessageDto
-  ): Promise<void> {
-    return await this.usersService.sendMessage(likeId, messageDto);
-  }
-
-  @Get('/get-conversation/:likeId')
-  async getConversation(
-    @Param('likeId') likeId: string,
-    @Query() paginateDto: PaginateDto
-  ): Promise<ResponsePaginateDtoMessages> {
-    return await this.usersService.getConversation(likeId, paginateDto);
-  }
-
   @Get('/radius')
   async getRadius(
     @Body()

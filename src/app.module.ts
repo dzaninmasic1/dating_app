@@ -19,6 +19,8 @@ import { AuthModule } from './auth/auth.module';
 import { AuthService } from './auth/auth.service';
 import { LikeService } from './like/like.service';
 import { LikeModule } from './like/like.module';
+import { MessageModule } from './message/message.module';
+import { MessageService } from './message/message.service';
 
 @Module({
   imports: [
@@ -43,7 +45,8 @@ import { LikeModule } from './like/like.module';
     MailerModule,
     ScheduleModule.forRoot(),
     AuthModule,
-    LikeModule
+    LikeModule,
+    MessageModule
   ],
   controllers: [AppController],
   providers: [
@@ -51,7 +54,8 @@ import { LikeModule } from './like/like.module';
     UsersService,
     SchedulerService,
     AuthService,
-    LikeService
+    LikeService,
+    MessageService
   ]
 })
 export class AppModule {}

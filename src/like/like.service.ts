@@ -9,13 +9,15 @@ import {
   MatchStatus
 } from './like.types';
 import { Like, LikeWithId } from '../users/user.schema';
+import { MessageService } from '../message/message.service';
 
 @Injectable()
 export class LikeService {
   constructor(
     private readonly likeRepository: LikeRepository,
     private readonly userService: UsersService
-  ) {}
+  ) //private readonly messageService: MessageService
+  {}
 
   async test() {
     return await this.likeRepository.test();
@@ -291,5 +293,9 @@ export class LikeService {
     } else {
       throw new UnauthorizedException();
     }
+  }
+
+  async findLikeById(likeId: string) {
+    return await this.likeRepository.findLikeById(likeId);
   }
 }

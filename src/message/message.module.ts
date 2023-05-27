@@ -1,4 +1,7 @@
 import { Module } from '@nestjs/common';
+import { MessageController } from './message.controller';
+import { MessageRepository } from './message.repository';
+import { MessageService } from './message.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import {
   Like,
@@ -8,17 +11,14 @@ import {
   User,
   UserSchema
 } from '../users/user.schema';
-import { LikeController } from './like.controller';
-import { LikeRepository } from './like.repository';
-import { LikeService } from './like.service';
+import { LikeService } from '../like/like.service';
+import { LikeRepository } from '../like/like.repository';
 import { UsersService } from '../users/user.service';
 import { UserRepository } from '../users/user.repository';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailerService } from '../mailer/mailer.service';
-import { MessageService } from '../message/message.service';
-import { MessageRepository } from '../message/message.repository';
 
 @Module({
   imports: [
@@ -39,16 +39,16 @@ import { MessageRepository } from '../message/message.repository';
       { name: Message.name, schema: MessageSchema }
     ])
   ],
-  controllers: [LikeController],
+  controllers: [MessageController],
   providers: [
-    LikeRepository,
+    MessageRepository,
+    MessageService,
     LikeService,
+    LikeRepository,
     UsersService,
     UserRepository,
-    MailerService,
-    MessageRepository,
-    MessageService
+    MailerService
   ],
-  exports: [LikeRepository]
+  exports: [MessageRepository]
 })
-export class LikeModule {}
+export class MessageModule {}
